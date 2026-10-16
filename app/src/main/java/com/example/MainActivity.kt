@@ -1,6 +1,44 @@
 package com.example
 
 import android.content.Intent
+import android.Manifest
+import android.os.Build
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.CircularProgressIndicator
+import com.example.ui.components.LocalReduceMotion
+import com.example.ui.components.LocalSheetFeedback
+import com.example.ui.screens.TaskFocusScreen
+import com.example.ui.sheets.TaskEditorSheet
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.MutableStateFlow
+import java.time.LocalDate
+import java.time.LocalDateTime
+import kotlinx.coroutines.delay
+import android.provider.Settings
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -59,12 +97,20 @@ import com.example.ui.theme.EvolveTheme
 import com.example.ui.theme.ManropeFontFamily
 
 class MainActivity : ComponentActivity() {
+    private val incomingAction = MutableStateFlow<String?>(null)
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        incomingAction.value = intent.getStringExtra("evolve_action")
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        incomingAction.value = intent.getStringExtra("evolve_action")
         setContent {
             EvolveTheme {
-                EvolveApp()
+                val incoming by incomingAction.collectAsStateWithLifecycle()
+                EvolveApp(incomingAction = incoming, onIncomingHandled = { incomingAction.value = null })
             }
         }
     }
@@ -72,48 +118,124 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun EvolveApp(
-    viewModel: EvolveViewModel = viewModel()
+    viewModel: EvolveViewModel = viewModel(),
+    incomingAction: String? = null,
+    onIncomingHandled: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val now by produceState(LocalDateTime.now()) {
+        while (true) { value = LocalDateTime.now(); delay(30_000) }
+    }
+    val backdrop = rememberGraphicsLayer()
+    var backdropOrigin by remember { mutableStateOf(Offset.Zero) }
+    val savedScreens = rememberSaveableStateHolder()
+    val density = LocalDensity.current
+    val imeVisible = WindowInsets.ime.getBottom(density) > 0
 
-    val currentDest by viewModel.currentDestination.collectAsState()
-    val isViewingNotes by viewModel.isViewingSubjectNotes.collectAsState()
-    val activeSubjectId by viewModel.activeSubjectId.collectAsState()
-    val isStudyActive by viewModel.isStudyActive.collectAsState()
-    val isSettingsOpen by viewModel.isSettingsOpen.collectAsState()
-    val isSetupScreenOpen by viewModel.isSetupScreenOpen.collectAsState()
-    val activeSheet by viewModel.activeSheet.collectAsState()
-    val toastMessage by viewModel.toastMessage.collectAsState()
-    val showUnsavedDialog by viewModel.showUnsavedDialog.collectAsState()
+    val currentDest by viewModel.currentDestination.collectAsStateWithLifecycle()
+    val isViewingNotes by viewModel.isViewingSubjectNotes.collectAsStateWithLifecycle()
+    val activeSubjectId by viewModel.activeSubjectId.collectAsStateWithLifecycle()
+    val isStudyActive by viewModel.isStudyActive.collectAsStateWithLifecycle()
+    val isSettingsOpen by viewModel.isSettingsOpen.collectAsStateWithLifecycle()
+    val isSetupScreenOpen by viewModel.isSetupScreenOpen.collectAsStateWithLifecycle()
+    val activeSheet by viewModel.activeSheet.collectAsStateWithLifecycle()
+    val toastMessage by viewModel.toastMessage.collectAsStateWithLifecycle()
+    val showUnsavedDialog by viewModel.showUnsavedDialog.collectAsStateWithLifecycle()
 
-    val subjects by viewModel.subjects.collectAsState()
-    val allTips by viewModel.allTips.collectAsState()
-    val sessions by viewModel.sessions.collectAsState()
-    val userProfile by viewModel.userProfile.collectAsState()
+    val subjects by viewModel.subjects.collectAsStateWithLifecycle()
+    val allTips by viewModel.allTips.collectAsStateWithLifecycle()
+    val sessions by viewModel.sessions.collectAsStateWithLifecycle()
+    val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
 
-    val subjectSearch by viewModel.subjectSearch.collectAsState()
-    val noteSearch by viewModel.noteSearch.collectAsState()
-    val noteFilter by viewModel.noteFilter.collectAsState()
+    val subjectSearch by viewModel.subjectSearch.collectAsStateWithLifecycle()
+    val noteSearch by viewModel.noteSearch.collectAsStateWithLifecycle()
+    val noteFilter by viewModel.noteFilter.collectAsStateWithLifecycle()
 
-    val editorTipId by viewModel.editorTipId.collectAsState()
-    val editorSubjectId by viewModel.editorSubjectId.collectAsState()
-    val editorCategory by viewModel.editorCategory.collectAsState()
-    val editorText by viewModel.editorText.collectAsState()
-    val briefInputText by viewModel.briefInputText.collectAsState()
+    val editorTipId by viewModel.editorTipId.collectAsStateWithLifecycle()
+    val editorSubjectId by viewModel.editorSubjectId.collectAsStateWithLifecycle()
+    val editorCategory by viewModel.editorCategory.collectAsStateWithLifecycle()
+    val editorText by viewModel.editorText.collectAsStateWithLifecycle()
+    val briefInputText by viewModel.briefInputText.collectAsStateWithLifecycle()
 
-    val studyStep by viewModel.studyStep.collectAsState()
-    val timerSeconds by viewModel.timerSeconds.collectAsState()
-    val isTimerRunning by viewModel.isTimerRunning.collectAsState()
-    val quizIndex by viewModel.quizQuestionIndex.collectAsState()
-    val selectedOption by viewModel.quizSelectedOption.collectAsState()
-    val isAnswerChecked by viewModel.isQuizAnswerChecked.collectAsState()
-    val quizAnswers by viewModel.quizAnswers.collectAsState()
+    val studyStep by viewModel.studyStep.collectAsStateWithLifecycle()
+    val timerSeconds by viewModel.timerSeconds.collectAsStateWithLifecycle()
+    val isTimerRunning by viewModel.isTimerRunning.collectAsStateWithLifecycle()
+    val quizIndex by viewModel.quizQuestionIndex.collectAsStateWithLifecycle()
+    val selectedOption by viewModel.quizSelectedOption.collectAsStateWithLifecycle()
+    val isAnswerChecked by viewModel.isQuizAnswerChecked.collectAsStateWithLifecycle()
+    val quizAnswers by viewModel.quizAnswers.collectAsStateWithLifecycle()
 
-    val nextAction = PlannerEngine.determineNextAction(userProfile)
-    val availableSlots = PlannerEngine.getAvailableSlots(userProfile)
+    val ready by viewModel.ready.collectAsStateWithLifecycle()
+    val tasks by viewModel.tasks.collectAsStateWithLifecycle()
+    val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
+    val activeTaskId by viewModel.activeTaskId.collectAsStateWithLifecycle()
+    val isSaving by viewModel.isSaving.collectAsStateWithLifecycle()
+    val briefDueDate by viewModel.briefDueDate.collectAsStateWithLifecycle()
+    val pendingBackup by viewModel.pendingBackup.collectAsStateWithLifecycle()
+    val nextAction = PlannerEngine.determineNextAction(userProfile, tasks)
+    val reducedMotion = userProfile.reducedMotion || Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+    val route = when {
+        isSetupScreenOpen -> "setup"
+        isStudyActive -> "study:${activeTaskId ?: "sample"}"
+        isViewingNotes -> "notes:$activeSubjectId"
+        else -> currentDest.name
+    }
+    fun openAction(type: String, id: String = nextAction.id) {
+        when (type) {
+            "brief-graphics" -> viewModel.openSheet(ActiveSheet.BriefCapture("graphics"))
+            "brief-electrical" -> viewModel.openSheet(ActiveSheet.BriefCapture("electrical"))
+            "task" -> viewModel.openTaskFlow(id)
+            "add-task" -> viewModel.openSheet(ActiveSheet.TaskEditor())
+            "reschedule" -> viewModel.openSheet(ActiveSheet.Reschedule)
+            else -> viewModel.openStudyFlow()
+        }
+    }
+    LaunchedEffect(now.toLocalDate()) { if (selectedDate < now.toLocalDate()) viewModel.setActiveDate(now.toLocalDate()) }
+    LaunchedEffect(incomingAction, ready) {
+        if (incomingAction != null && ready) {
+            if (incomingAction.startsWith("task:")) openAction("task", incomingAction.removePrefix("task:"))
+            else openAction(incomingAction)
+            onIncomingHandled()
+        }
+    }
+    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) viewModel.updateProfile(userProfile.copy(remindersEnabled = true))
+        else viewModel.showToast("Notifications are off. You can enable permission in Android settings.")
+    }
+    val exportFile = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri != null) scope.launch {
+            try {
+                val json = withContext(Dispatchers.IO) { viewModel.repository.exportBackupJson(subjects, allTips, sessions, userProfile, tasks) }
+                withContext(Dispatchers.IO) { context.contentResolver.openOutputStream(uri)?.use { it.write(json.toByteArray(Charsets.UTF_8)) } ?: error("File could not open") }
+                viewModel.showToast("Backup saved.")
+            } catch (e: Exception) { viewModel.showToast("Backup could not be saved. Try another location.") }
+        }
+    }
+    val importFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) scope.launch {
+            try {
+                val text = withContext(Dispatchers.IO) {
+                    context.contentResolver.openInputStream(uri)?.reader(Charsets.UTF_8)?.use { reader ->
+                        val result = StringBuilder()
+                        val buffer = CharArray(4096)
+                        var count = reader.read(buffer)
+                        while (count >= 0) {
+                            result.append(buffer, 0, count)
+                            require(result.length <= 5_000_000) { "Backup is too large" }
+                            count = reader.read(buffer)
+                        }
+                        result.toString()
+                    } ?: error("File could not open")
+                }
+                viewModel.previewBackup(text)
+            } catch (e: Exception) { viewModel.showToast("Backup file could not be read.") }
+        }
+    }
+    val availableSlots = PlannerEngine.getAvailableSlots(userProfile, now = now, durationMinutes = nextAction.minutes, dueDate = nextAction.dueDate)
 
     // Hardware Back Handler Navigation
-    BackHandler {
+    BackHandler(enabled = !imeVisible) {
         when {
             showUnsavedDialog -> viewModel.dismissUnsavedDialog(discardDraft = false)
             activeSheet != null -> viewModel.requestCloseSheet()
@@ -128,6 +250,7 @@ fun EvolveApp(
         }
     }
 
+    CompositionLocalProvider(LocalReduceMotion provides reducedMotion, LocalSheetFeedback provides toastMessage) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = EvolveBlack
@@ -137,21 +260,36 @@ fun EvolveApp(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // Main Screen Content
+            // Capture screen content once; the dock samples this layer, never itself.
+            AnimatedContent(targetState = if (ready) route else "loading", label = "screen",
+                modifier = Modifier.fillMaxSize().onGloballyPositioned { backdropOrigin = it.positionInRoot() }
+                    .drawWithContent { backdrop.record { this@drawWithContent.drawContent() }; drawLayer(backdrop) },
+                transitionSpec = {
+                    val duration = if (reducedMotion) 0 else 260
+                    (fadeIn(tween(duration)) + slideInHorizontally(tween(duration)) { it / 18 }) togetherWith
+                        (fadeOut(tween(duration)) + slideOutHorizontally(tween(duration)) { -it / 24 })
+                }) { screen ->
+            savedScreens.SaveableStateProvider(screen) {
             when {
-                isSetupScreenOpen -> {
+                screen == "loading" -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = EvolveAccent) }
+                screen == "setup" -> {
                     SetupScreen(
                         currentProfile = userProfile,
                         onSaveProfile = { updated ->
-                            viewModel.updateProfile(updated)
-                            viewModel.closeSetupScreen()
+                            viewModel.updateProfile(updated, closeSetup = true)
                         },
                         onBackClick = { viewModel.closeSetupScreen() },
                         onSettingsClick = { viewModel.openSettings() }
                     )
                 }
-                isStudyActive -> {
-                    StudyScreen(
+                screen.startsWith("study:") -> {
+                    val task = tasks.find { it.id == activeTaskId }
+                    if (activeTaskId != null && task != null) TaskFocusScreen(
+                        task, allTips.filter { it.subjectId == task.subjectId }, timerSeconds, isTimerRunning,
+                        { viewModel.toggleTimer() }, { viewModel.completeTask(task.id, !task.completed) },
+                        { viewModel.openSheet(ActiveSheet.TaskEditor(task.id)) }, { viewModel.exitStudyFlow() })
+                    else if (activeTaskId != null) TextButton(onClick = { viewModel.exitStudyFlow() }) { Text("Task unavailable. Return to your plan.", color = EvolveText) }
+                    else StudyScreen(
                         studyStep = studyStep,
                         timerSeconds = timerSeconds,
                         isTimerRunning = isTimerRunning,
@@ -160,7 +298,7 @@ fun EvolveApp(
                         isAnswerChecked = isAnswerChecked,
                         quizAnswers = quizAnswers,
                         onToggleTimer = { viewModel.toggleTimer() },
-                        onStartQuiz = { viewModel.openStudyFlow(); viewModel.nextQuizQuestion(0) },
+                        onStartQuiz = { viewModel.startQuiz() },
                         onSelectOption = { viewModel.selectQuizOption(it) },
                         onCheckAnswer = { viewModel.checkQuizAnswer(it) },
                         onNextQuestion = { viewModel.nextQuizQuestion(it) },
@@ -172,7 +310,7 @@ fun EvolveApp(
                         onBackClick = { viewModel.exitStudyFlow() }
                     )
                 }
-                isViewingNotes -> {
+                screen.startsWith("notes:") -> {
                     val activeSubject = subjects.find { it.id == activeSubjectId } ?: subjects.firstOrNull()
                     if (activeSubject != null) {
                         SubjectNotesScreen(
@@ -200,18 +338,13 @@ fun EvolveApp(
                     }
                 }
                 else -> {
-                    when (currentDest) {
+                    when (NavDestination.valueOf(screen)) {
                         NavDestination.TODAY -> {
                             TodayScreen(
                                 userProfile = userProfile,
+                                now = now,
                                 nextAction = nextAction,
-                                onNextActionClick = { actionType ->
-                                    when (actionType) {
-                                        "brief-graphics" -> viewModel.openSheet(ActiveSheet.BriefCapture("graphics"))
-                                        "brief-electrical" -> viewModel.openSheet(ActiveSheet.BriefCapture("electrical"))
-                                        "open-study" -> viewModel.openStudyFlow()
-                                    }
-                                },
+                                onNextActionClick = { openAction(it) },
                                 onWhyFirstClick = { viewModel.openSheet(ActiveSheet.WhyFirst) },
                                 onRescheduleClick = { viewModel.openSheet(ActiveSheet.Reschedule) },
                                 onOpenPlanClick = { viewModel.navigateTo(NavDestination.PLAN) },
@@ -223,11 +356,16 @@ fun EvolveApp(
                         NavDestination.PLAN -> {
                             PlanScreen(
                                 userProfile = userProfile,
-                                activeDate = userProfile.activeDate,
+                                tasks = tasks,
+                                now = now,
+                                activeDate = selectedDate,
                                 onSelectDate = { viewModel.setActiveDate(it) },
                                 onRescheduleClick = { viewModel.openSheet(ActiveSheet.Reschedule) },
                                 onOpenBriefClick = { key -> viewModel.openSheet(ActiveSheet.BriefCapture(key)) },
                                 onOpenStudyClick = { viewModel.openStudyFlow() },
+                                onTaskClick = { viewModel.openTaskFlow(it) },
+                                onEditTask = { viewModel.openSheet(ActiveSheet.TaskEditor(it)) },
+                                onAddTask = { viewModel.openSheet(ActiveSheet.TaskEditor()) },
                                 onSettingsClick = { viewModel.openSettings() }
                             )
                         }
@@ -249,6 +387,8 @@ fun EvolveApp(
                         NavDestination.PROGRESS -> {
                             ProgressScreen(
                                 sessions = sessions,
+                                tasks = tasks,
+                                onOpenSample = { viewModel.openStudyFlow() },
                                 onOpenSubjectsClick = { viewModel.navigateTo(NavDestination.SUBJECTS) },
                                 onSettingsClick = { viewModel.openSettings() }
                             )
@@ -257,23 +397,28 @@ fun EvolveApp(
                 }
             }
 
+            }
+            }
+
             // Floating Smoked-Glass Capsule Navigation Dock
             // Hides when sheets, study session, or settings are active!
-            val isDockVisible = activeSheet == null && !isStudyActive && !isSettingsOpen && !isSetupScreenOpen
+            val isDockVisible = ready && activeSheet == null && !isStudyActive && !isSettingsOpen && !isSetupScreenOpen && !imeVisible
             GlassDock(
                 currentDestination = currentDest,
                 onNavigate = { dest ->
                     viewModel.navigateTo(dest)
                 },
                 isVisible = isDockVisible,
+                backdrop = backdrop,
+                backdropOrigin = backdropOrigin,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
 
             // Animated Toast Notification Banner
             AnimatedVisibility(
                 visible = toastMessage != null,
-                enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
-                exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut(),
+                enter = if (reducedMotion) androidx.compose.animation.EnterTransition.None else slideInVertically(initialOffsetY = { -it }) + fadeIn(),
+                exit = if (reducedMotion) androidx.compose.animation.ExitTransition.None else slideOutVertically(targetOffsetY = { -it }) + fadeOut(),
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .statusBarsPadding()
@@ -304,6 +449,7 @@ fun EvolveApp(
                 is ActiveSheet.NoteEditor -> {
                     NoteCaptureSheet(
                         isEditing = editorTipId != null,
+                        isSaving = isSaving,
                         tipText = editorText,
                         category = editorCategory,
                         selectedSubjectId = editorSubjectId,
@@ -317,22 +463,22 @@ fun EvolveApp(
                 }
                 is ActiveSheet.WhyFirst -> {
                     WhyFirstSheet(
-                        onGetFirstBrief = {
-                            viewModel.openSheet(ActiveSheet.BriefCapture("graphics"))
-                        },
+                        action = nextAction,
+                        onGetFirstBrief = { openAction(nextAction.actionType) },
                         onClose = { viewModel.requestCloseSheet() }
                     )
                 }
                 is ActiveSheet.Reschedule -> {
                     RescheduleSheet(
-                        currentScheduledSlot = userProfile.scheduledSlot,
+                        currentScheduledSlot = "${userProfile.scheduledDate}|${userProfile.scheduledSlot}",
+                        action = nextAction,
                         availableSlots = availableSlots,
                         onSelectSlot = { slotTime ->
                             viewModel.chooseRescheduleSlot(slotTime)
                         },
                         onOpenSetup = {
                             viewModel.requestCloseSheet()
-                            viewModel.openSettings()
+                            viewModel.openSetupScreen()
                         },
                         onClose = { viewModel.requestCloseSheet() }
                     )
@@ -341,10 +487,16 @@ fun EvolveApp(
                     BriefCaptureSheet(
                         subjectKey = sheet.subjectKey,
                         briefText = briefInputText,
+                        dueDate = briefDueDate,
+                        onDueDateChange = { viewModel.updateBriefDueDate(it) },
                         onTextChange = { viewModel.updateBriefInput(it) },
                         onSaveClick = { viewModel.saveBrief(sheet.subjectKey) },
                         onClose = { viewModel.requestCloseSheet() }
                     )
+                }
+                is ActiveSheet.TaskEditor -> {
+                    TaskEditorSheet(tasks.find { it.id == sheet.taskId }, subjects, isSaving,
+                        { viewModel.saveTask(it) }, { viewModel.requestCloseSheet() })
                 }
                 is ActiveSheet.AddSubject -> {
                     AddSubjectDialog(
@@ -366,27 +518,27 @@ fun EvolveApp(
             if (isSettingsOpen) {
                 SettingsSheet(
                     profile = userProfile,
-                    onUpdateProfile = { viewModel.updateProfile(it) },
-                    onExportBackup = {
-                        val json = viewModel.repository.exportBackupJson(
-                            subjectsList = subjects,
-                            tipsList = allTips,
-                            sessionsList = sessions,
-                            profile = userProfile
-                        )
-                        val sendIntent = Intent().apply {
-                            action = Intent.ACTION_SEND
-                            putExtra(Intent.EXTRA_TEXT, json)
-                            type = "application/json"
-                        }
-                        context.startActivity(Intent.createChooser(sendIntent, "Export Evolve Backup"))
+                    onUpdateProfile = { updated ->
+                        if (updated.remindersEnabled && Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
+                            permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        else viewModel.updateProfile(updated)
                     },
+                    onExportBackup = { exportFile.launch("Evolve-backup-${LocalDate.now()}.json") },
+                    onImportBackup = { importFile.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) },
                     onClearSamples = { viewModel.clearSampleNotes() },
                     onOpenSetup = {
                         viewModel.openSetupScreen()
                     },
                     onClose = { viewModel.closeSettings() }
                 )
+            }
+
+            pendingBackup?.let { backup ->
+                AlertDialog(onDismissRequest = { viewModel.cancelImport() }, containerColor = com.example.ui.theme.EvolveSurface,
+                    title = { Text("Merge this backup?", color = EvolveText) },
+                    text = { Text(backup.summary + " Reminders will be off after import.", color = EvolveText) },
+                    confirmButton = { TextButton(enabled = !isSaving, onClick = { viewModel.confirmImport() }) { Text(if (isSaving) "Importing…" else "Merge records") } },
+                    dismissButton = { TextButton(onClick = { viewModel.cancelImport() }) { Text("Cancel") } })
             }
 
             // Unsaved Draft Dialog
@@ -399,4 +551,5 @@ fun EvolveApp(
             }
         }
     }
+}
 }

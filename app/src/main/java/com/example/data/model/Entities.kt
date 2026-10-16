@@ -1,6 +1,7 @@
 package com.example.data.model
 
 import androidx.room.Entity
+import androidx.room.ColumnInfo
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "subjects")
@@ -32,23 +33,41 @@ data class StudySessionEntity(
     val total: Int,
     val date: String,
     val isSample: Boolean,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    @ColumnInfo(defaultValue = "'legacy'") val evidenceType: String = "legacy"
 )
 
 @Entity(tableName = "user_profile")
 data class UserProfileEntity(
     @PrimaryKey val id: Int = 1,
     val name: String = "",
-    val examDate: String = "2026-11-07",
+    val examDate: String = "",
     val collegeStart: String = "07:45",
     val collegeEnd: String = "14:30",
     val gymStart: String = "20:00",
     val gymEnd: String = "21:00",
     val callStart: String = "22:30",
-    val remindersEnabled: Boolean = true,
+    val remindersEnabled: Boolean = false,
     val reducedMotion: Boolean = false,
     val scheduledSlot: String = "15:30",
     val graphicsBrief: String = "",
     val electricalBrief: String = "",
-    val activeDate: Int = 16
+    val activeDate: Int = 16,
+    @ColumnInfo(defaultValue = "'16:00'") val studyStart: String = "16:00",
+    @ColumnInfo(defaultValue = "'22:00'") val studyEnd: String = "22:00",
+    @ColumnInfo(defaultValue = "''") val graphicsDueDate: String = "",
+    @ColumnInfo(defaultValue = "''") val electricalDueDate: String = "",
+    @ColumnInfo(defaultValue = "''") val scheduledDate: String = ""
+)
+
+@Entity(tableName = "academic_tasks")
+data class AcademicTaskEntity(
+    @PrimaryKey val id: String,
+    val subjectId: String,
+    val title: String,
+    val instructions: String,
+    val dueDate: String = "",
+    val durationMinutes: Int = 25,
+    val completed: Boolean = false,
+    val createdAt: Long = System.currentTimeMillis()
 )

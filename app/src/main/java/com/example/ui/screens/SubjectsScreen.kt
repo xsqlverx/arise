@@ -259,7 +259,7 @@ fun SubjectsScreen(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 Text(
-                    text = "Example notes illustrate your requested writing conventions. Replace them with your teachers’ actual advice.",
+                    text = "Keep a separate notebook for each subject. A short, specific tip is enough.",
                     fontFamily = ManropeFontFamily,
                     fontSize = 10.sp,
                     lineHeight = 16.sp,

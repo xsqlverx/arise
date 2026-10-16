@@ -38,6 +38,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.UserProfileEntity
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+import com.example.ui.components.Eyebrow
 import com.example.domain.NextAction
 import com.example.domain.PlannerEngine
 import com.example.ui.components.ContourLandscape
@@ -60,6 +65,7 @@ import com.example.ui.theme.SpaceGroteskFontFamily
 fun TodayScreen(
     userProfile: UserProfileEntity,
     nextAction: NextAction,
+    now: LocalDateTime,
     onNextActionClick: (String) -> Unit,
     onWhyFirstClick: () -> Unit,
     onRescheduleClick: () -> Unit,
@@ -90,7 +96,7 @@ fun TodayScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "FRIDAY, 16 OCTOBER",
+                text = now.toLocalDate().format(DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.ENGLISH)).uppercase(),
                 fontFamily = ManropeFontFamily,
                 fontSize = 10.sp,
                 letterSpacing = 1.8.sp,
@@ -142,13 +148,13 @@ fun TodayScreen(
                 horizontalAlignment = Alignment.End
             ) {
                 Text(
-                    text = String.format("%02d", daysToExam),
+                    text = daysToExam?.let { if (it >= 0) it.toString().padStart(2, '0') else "Past" } ?: "—",
                     fontFamily = SpaceGroteskFontFamily,
                     fontSize = 36.sp,
                     color = EvolveText
                 )
                 Text(
-                    text = "days to $examDateFormatted\nyour next exam",
+                    text = if (daysToExam == null) "Confirm your\nnext exam date" else if (daysToExam < 0) "Review your\nexam date" else "days to $examDateFormatted\nyour next exam",
                     fontFamily = ManropeFontFamily,
                     fontSize = 10.sp,
                     lineHeight = 14.sp,
@@ -245,7 +251,16 @@ fun TodayScreen(
                     color = Color(0xFFB8B2C4)
                 )
 
+                Spacer(modifier = Modifier.height(18.dp))
+                Eyebrow("Start here", accent = true)
+                Spacer(modifier = Modifier.height(7.dp))
+                Text(nextAction.firstStep, fontFamily = ManropeFontFamily, fontSize = 13.sp,
+                    lineHeight = 21.sp, color = EvolveText)
                 Spacer(modifier = Modifier.height(16.dp))
+                Text(PlannerEngine.plannedSlot(userProfile, nextAction, now)?.let { "Next free block · ${it.label}" }
+                    ?: "No free block fits. Edit availability or choose a smaller step.",
+                    fontSize = 11.sp, lineHeight = 17.sp, color = EvolveMuted)
+                Spacer(modifier = Modifier.height(18.dp))
 
                 Button(
                     onClick = { onNextActionClick(nextAction.actionType) },
@@ -330,7 +345,7 @@ fun TodayScreen(
         DeadlineRow(
             title = "Engineering graphics",
             subtitle = if (userProfile.graphicsBrief.isNotBlank()) "Assignment · Questions captured" else "Assignment · Questions needed",
-            tag = "18 Oct · confirm",
+            tag = if (userProfile.graphicsDueDate.isBlank()) "Date needed" else PlannerEngine.formatExamDate(userProfile.graphicsDueDate),
             icon = Icons.Outlined.Architecture,
             onClick = { onOpenBriefClick("graphics") }
         )
@@ -338,7 +353,7 @@ fun TodayScreen(
         DeadlineRow(
             title = "Electrical & electronics",
             subtitle = if (userProfile.electricalBrief.isNotBlank()) "Assignment · Questions captured" else "Assignment · Questions needed",
-            tag = "18 Oct · confirm",
+            tag = if (userProfile.electricalDueDate.isBlank()) "Date needed" else PlannerEngine.formatExamDate(userProfile.electricalDueDate),
             icon = Icons.Outlined.ElectricBolt,
             onClick = { onOpenBriefClick("electrical") }
         )
@@ -378,7 +393,7 @@ fun TodayScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "Design preview · 16 Oct 2026 · Replace sample material with your own.",
+            text = "Your plan uses the work and dates you enter. Unknown information stays visible.",
             fontFamily = ManropeFontFamily,
             fontSize = 10.sp,
             lineHeight = 16.sp,

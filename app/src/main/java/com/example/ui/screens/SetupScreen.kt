@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -61,13 +62,15 @@ fun SetupScreen(
 ) {
     val scrollState = rememberScrollState()
 
-    var name by remember { mutableStateOf(currentProfile.name) }
-    var examDate by remember { mutableStateOf(currentProfile.examDate) }
-    var collegeStart by remember { mutableStateOf(currentProfile.collegeStart) }
-    var collegeEnd by remember { mutableStateOf(currentProfile.collegeEnd) }
-    var gymStart by remember { mutableStateOf(currentProfile.gymStart) }
-    var gymEnd by remember { mutableStateOf(currentProfile.gymEnd) }
-    var callStart by remember { mutableStateOf(currentProfile.callStart) }
+    var name by rememberSaveable { mutableStateOf(currentProfile.name) }
+    var examDate by rememberSaveable { mutableStateOf(currentProfile.examDate) }
+    var collegeStart by rememberSaveable { mutableStateOf(currentProfile.collegeStart) }
+    var collegeEnd by rememberSaveable { mutableStateOf(currentProfile.collegeEnd) }
+    var gymStart by rememberSaveable { mutableStateOf(currentProfile.gymStart) }
+    var gymEnd by rememberSaveable { mutableStateOf(currentProfile.gymEnd) }
+    var studyStart by rememberSaveable { mutableStateOf(currentProfile.studyStart) }
+    var studyEnd by rememberSaveable { mutableStateOf(currentProfile.studyEnd) }
+    var callStart by rememberSaveable { mutableStateOf(currentProfile.callStart) }
 
     Column(
         modifier = modifier
@@ -152,7 +155,7 @@ fun SetupScreen(
             label = "Next exam date (YYYY-MM-DD)",
             value = examDate,
             onValueChange = { examDate = it },
-            placeholder = "2026-11-07",
+            placeholder = "Leave blank if unknown",
             testTag = "setup_exam_date_input"
         )
 
@@ -234,6 +237,12 @@ fun SetupScreen(
 
         Spacer(modifier = Modifier.height(14.dp))
 
+        FormField("Study window starts", studyStart, { studyStart = it }, "16:00", "study_window_start")
+        Spacer(Modifier.height(14.dp))
+        FormField("Study window ends", studyEnd, { studyEnd = it }, "22:00", "study_window_end")
+        Spacer(Modifier.height(14.dp))
+        Text("Only this window is offered for study. Include recovery and meals outside it; protected commitments are excluded automatically.", color = EvolveDim, fontSize = 11.sp)
+        Spacer(Modifier.height(14.dp))
         // Evening Call Field
         FormField(
             label = "Evening call · earliest start",
@@ -255,7 +264,9 @@ fun SetupScreen(
                         collegeEnd = collegeEnd.trim(),
                         gymStart = gymStart.trim(),
                         gymEnd = gymEnd.trim(),
-                        callStart = callStart.trim()
+                        callStart = callStart.trim(),
+                        studyStart = studyStart.trim(),
+                        studyEnd = studyEnd.trim()
                     )
                 )
             },

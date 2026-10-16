@@ -10,6 +10,7 @@ import com.example.data.model.ClassTipEntity
 import com.example.data.model.StudySessionEntity
 import com.example.data.model.SubjectEntity
 import com.example.data.model.UserProfileEntity
+import com.example.data.model.AcademicTaskEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -35,6 +36,11 @@ interface SubjectDao {
 
 @Dao
 interface ClassTipDao {
+    @Query("SELECT * FROM class_tips WHERE id = :id")
+    suspend fun getById(id: String): ClassTipEntity?
+
+    @Query("UPDATE class_tips SET pinned = NOT pinned WHERE id = :id")
+    suspend fun togglePin(id: String)
     @Query("SELECT * FROM class_tips ORDER BY pinned DESC, createdAt DESC")
     fun getAllTips(): Flow<List<ClassTipEntity>>
 
@@ -71,6 +77,9 @@ interface StudySessionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(sessions: List<StudySessionEntity>)
 
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertOnce(session: StudySessionEntity)
+
     @Query("DELETE FROM study_sessions")
     suspend fun clearAll()
 }
@@ -78,8 +87,28 @@ interface StudySessionDao {
 @Dao
 interface UserProfileDao {
     @Query("SELECT * FROM user_profile WHERE id = 1 LIMIT 1")
+    suspend fun getNow(): UserProfileEntity?
+    @Query("SELECT * FROM user_profile WHERE id = 1 LIMIT 1")
     fun getProfile(): Flow<UserProfileEntity?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdate(profile: UserProfileEntity)
+}
+
+@Dao
+interface AcademicTaskDao {
+    @Query("SELECT * FROM academic_tasks ORDER BY completed ASC, createdAt ASC")
+    fun observeAll(): Flow<List<AcademicTaskEntity>>
+
+    @Query("SELECT * FROM academic_tasks ORDER BY createdAt ASC")
+    suspend fun getNow(): List<AcademicTaskEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun save(task: AcademicTaskEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun saveAll(tasks: List<AcademicTaskEntity>)
+
+    @Query("UPDATE academic_tasks SET completed = :completed WHERE id = :id")
+    suspend fun setCompleted(id: String, completed: Boolean)
 }

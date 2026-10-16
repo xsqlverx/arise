@@ -1,515 +1,108 @@
 package com.example.ui.screens
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowForward
-import androidx.compose.material.icons.outlined.Architecture
-import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material.icons.outlined.ElectricBolt
-import androidx.compose.material.icons.outlined.Lock
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.data.model.UserProfileEntity
+import com.example.data.model.*
 import com.example.domain.PlannerEngine
-import com.example.ui.components.TopBar
-import com.example.ui.theme.EvolveAccent
-import com.example.ui.theme.EvolveBlack
-import com.example.ui.theme.EvolveDim
-import com.example.ui.theme.EvolveLine
-import com.example.ui.theme.EvolveMuted
-import com.example.ui.theme.EvolvePillBg
-import com.example.ui.theme.EvolvePillText
-import com.example.ui.theme.EvolveText
-import com.example.ui.theme.ManropeFontFamily
-import com.example.ui.theme.SpaceGroteskFontFamily
+import com.example.ui.components.*
+import com.example.ui.theme.*
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
-fun PlanScreen(
-    userProfile: UserProfileEntity,
-    activeDate: Int,
-    onSelectDate: (Int) -> Unit,
-    onRescheduleClick: () -> Unit,
-    onOpenBriefClick: (String) -> Unit,
-    onOpenStudyClick: () -> Unit,
-    onSettingsClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val scrollState = rememberScrollState()
-    val isFriday16 = activeDate == 16
-    val daysToExam = PlannerEngine.calculateDaysToExam(userProfile.examDate)
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(EvolveBlack)
-            .padding(horizontal = 24.dp)
-            .verticalScroll(scrollState)
-    ) {
+fun PlanScreen(userProfile: UserProfileEntity, tasks: List<AcademicTaskEntity>, activeDate: LocalDate, now: LocalDateTime,
+    onSelectDate: (LocalDate) -> Unit, onRescheduleClick: () -> Unit,
+    onOpenBriefClick: (String) -> Unit, onOpenStudyClick: () -> Unit,
+    onTaskClick: (String) -> Unit, onEditTask: (String) -> Unit, onAddTask: () -> Unit,
+    onSettingsClick: () -> Unit) {
+    val action = PlannerEngine.determineNextAction(userProfile, tasks)
+    val slot = PlannerEngine.plannedSlot(userProfile, action, now)
+    val today = now.toLocalDate()
+    Column(Modifier.fillMaxSize().background(EvolveBlack).padding(horizontal = 24.dp).verticalScroll(rememberScrollState())) {
         TopBar(onSettingsClick = onSettingsClick)
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "YOUR TIME, CONSIDERED",
-                fontFamily = ManropeFontFamily,
-                fontSize = 10.sp,
-                letterSpacing = 1.8.sp,
-                color = EvolveMuted
-            )
-            Text(
-                text = "OCT 2026",
-                fontFamily = SpaceGroteskFontFamily,
-                fontSize = 11.sp,
-                color = EvolveDim
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Make space",
-            fontFamily = SpaceGroteskFontFamily,
-            fontSize = 36.sp,
-            lineHeight = 42.sp,
-            color = EvolveText
-        )
-        Text(
-            text = "for progress.",
-            fontFamily = SpaceGroteskFontFamily,
-            fontSize = 36.sp,
-            lineHeight = 42.sp,
-            color = EvolveAccent
-        )
-
-        Spacer(modifier = Modifier.height(18.dp))
-
-        // 7-day compact date strip
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            val dayLetters = listOf("M", "T", "W", "T", "F", "S", "S")
-            for (i in 0 until 7) {
-                val dayNum = 12 + i
-                val isSelected = activeDate == dayNum
-
-                Column(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(30.dp))
-                        .background(if (isSelected) EvolvePillBg else Color.Transparent)
-                        .clickable { onSelectDate(dayNum) }
-                        .padding(horizontal = 11.dp, vertical = 10.dp)
-                        .testTag("date_strip_day_$dayNum"),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = dayLetters[i],
-                        fontFamily = ManropeFontFamily,
-                        fontSize = 10.sp,
-                        color = if (isSelected) EvolvePillText else EvolveDim
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = dayNum.toString(),
-                        fontFamily = SpaceGroteskFontFamily,
-                        fontSize = 14.sp,
-                        color = if (isSelected) EvolvePillText else EvolveDim
-                    )
+        Spacer(Modifier.height(24.dp)); Eyebrow("Your time, considered")
+        Spacer(Modifier.height(9.dp))
+        Text("Make space", color = EvolveText, fontFamily = SpaceGroteskFontFamily, fontSize = 36.sp)
+        Text("for progress.", color = EvolveAccent, fontFamily = SpaceGroteskFontFamily, fontSize = 36.sp)
+        Spacer(Modifier.height(24.dp))
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            (0L..6L).forEach { offset ->
+                val day = today.plusDays(offset)
+                val selected = day == activeDate
+                Column(Modifier.clip(RoundedCornerShape(26.dp)).background(if (selected) EvolvePillBg else EvolveBlack)
+                    .clickable { onSelectDate(day) }.widthIn(min = 44.dp).padding(horizontal = 13.dp, vertical = 14.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(day.format(DateTimeFormatter.ofPattern("EEE", Locale.ENGLISH)).take(1), color = if (selected) EvolveBlack else EvolveDim, fontSize = 11.sp)
+                    Spacer(Modifier.height(8.dp))
+                    Text(day.dayOfMonth.toString(), color = if (selected) EvolveBlack else EvolveText, fontFamily = SpaceGroteskFontFamily, fontSize = 17.sp)
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(18.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = if (isFriday16) "Today · Friday 16" else "Preview · $activeDate October",
-                fontFamily = ManropeFontFamily,
-                fontSize = 11.sp,
-                color = EvolveMuted
-            )
-            Text(
-                text = "Proposed schedule",
-                fontFamily = ManropeFontFamily,
-                fontSize = 11.sp,
-                color = EvolveDim
-            )
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        if (!isFriday16) {
-            // Empty state for other days
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 36.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.CalendarMonth,
-                    contentDescription = null,
-                    tint = EvolveAccent,
-                    modifier = Modifier.size(32.dp)
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "A little breathing room.",
-                    fontFamily = SpaceGroteskFontFamily,
-                    fontSize = 20.sp,
-                    color = EvolveText
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "No study blocks on this preview day.\nChoose Friday 16 to explore the sample plan.",
-                    fontFamily = ManropeFontFamily,
-                    fontSize = 12.sp,
-                    lineHeight = 18.sp,
-                    color = EvolveMuted
-                )
-            }
-        } else {
-            // Full chronological timeline
-            Column(modifier = Modifier.fillMaxWidth()) {
-                // College
-                TimelineSlot(
-                    time = userProfile.collegeStart,
-                    title = "College",
-                    subtitle = "Until ${PlannerEngine.formatTime12h(userProfile.collegeEnd)} · protected",
-                    isLocked = true,
-                    tag = null
-                )
-
-                // Buffer
-                TimelineSlot(
-                    time = userProfile.collegeEnd,
-                    title = "Land. Eat. Reset.",
-                    subtitle = "A realistic buffer after college.",
-                    isLocked = false,
-                    tag = "OPEN SPACE"
-                )
-
-                // Current Priority Slot
-                TimelineSlot(
-                    time = userProfile.scheduledSlot,
-                    title = "Get the assignment questions",
-                    subtitle = "Capture both briefs. Find out what the work actually involves.",
-                    isLocked = false,
-                    isCurrent = true,
-                    tag = "FIRST PRIORITY",
-                    actionLabel = "Open this step ↗",
-                    onActionClick = { onOpenBriefClick("graphics") }
-                )
-
-                // Study Block
-                TimelineSlot(
-                    time = "16:00",
-                    title = "Python · one concept",
-                    subtitle = "25 min guided practice + a short check.",
-                    isLocked = false,
-                    tag = "SAMPLE STUDY BLOCK",
-                    actionLabel = "Open this step ↗",
-                    onActionClick = onOpenStudyClick
-                )
-
-                // Assignment Work
-                TimelineSlot(
-                    time = "17:30",
-                    title = "Assignment work",
-                    subtitle = "Confirm questions and scope before estimating this block.",
-                    isLocked = false,
-                    tag = "NEEDS THE BRIEF"
-                )
-
-                // Gym
-                TimelineSlot(
-                    time = userProfile.gymStart,
-                    title = "Gym",
-                    subtitle = "Until ${PlannerEngine.formatTime12h(userProfile.gymEnd)} · protected",
-                    isLocked = true,
-                    tag = null
-                )
-
-                // Evening Call
-                TimelineSlot(
-                    time = userProfile.callStart,
-                    title = "Your evening call",
-                    subtitle = "Flexible start · protected time",
-                    isLocked = true,
-                    tag = null,
-                    isLast = true
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedButton(
-                onClick = onRescheduleClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .testTag("move_task_button"),
-                shape = RoundedCornerShape(15.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, EvolveLine),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = EvolveText
-                )
-            ) {
-                Text(
-                    text = "Move the first task",
-                    fontFamily = ManropeFontFamily,
-                    fontSize = 12.sp
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.ArrowForward,
-                    contentDescription = null,
-                    modifier = Modifier.size(15.dp)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(26.dp))
-
-        // Coming up section
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Coming up",
-                fontFamily = ManropeFontFamily,
-                fontSize = 14.sp,
-                color = EvolveText
-            )
-            Text(
-                text = "$daysToExam days to the exam",
-                fontFamily = ManropeFontFamily,
-                fontSize = 11.sp,
-                color = EvolveDim
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        DeadlineRow(
-            title = "Engineering graphics",
-            subtitle = if (userProfile.graphicsBrief.isNotBlank()) "Assignment · Questions captured" else "Assignment · Questions needed",
-            tag = "18 Oct · confirm",
-            icon = Icons.Outlined.Architecture,
-            onClick = { onOpenBriefClick("graphics") }
-        )
-
-        DeadlineRow(
-            title = "Electrical & electronics",
-            subtitle = if (userProfile.electricalBrief.isNotBlank()) "Assignment · Questions captured" else "Assignment · Questions needed",
-            tag = "18 Oct · confirm",
-            icon = Icons.Outlined.ElectricBolt,
-            onClick = { onOpenBriefClick("electrical") }
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = "Friday is an illustrative plan. Dates, durations and available slots need confirmation before a real schedule is generated.",
-            fontFamily = ManropeFontFamily,
-            fontSize = 10.sp,
-            lineHeight = 16.sp,
-            color = EvolveDim
-        )
-
-        Spacer(modifier = Modifier.height(120.dp))
-    }
-}
-
-@Composable
-fun TimelineSlot(
-    time: String,
-    title: String,
-    subtitle: String,
-    isLocked: Boolean,
-    tag: String?,
-    isCurrent: Boolean = false,
-    isLast: Boolean = false,
-    actionLabel: String? = null,
-    onActionClick: (() -> Unit)? = null
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = if (isLast) 8.dp else 18.dp)
-    ) {
-        // Time label
-        Text(
-            text = time,
-            fontFamily = SpaceGroteskFontFamily,
-            fontSize = 11.sp,
-            color = EvolveDim,
-            modifier = Modifier
-                .width(46.dp)
-                .padding(top = 2.dp)
-        )
-
-        // Dot & connecting line
-        Box(
-            modifier = Modifier
-                .width(20.dp)
-                .padding(top = 6.dp),
-            contentAlignment = Alignment.TopCenter
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(if (isCurrent) 8.dp else 6.dp)
-                    .background(if (isCurrent) EvolveAccent else Color(0xFF55515F), CircleShape)
-            )
-        }
-
-        // Slot content
-        if (isCurrent) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(17.dp))
-                    .background(Color(0x0EB79FE9))
-                    .border(1.dp, Color(0x33B79FE9), RoundedCornerShape(17.dp))
-                    .padding(14.dp)
-            ) {
-                Column {
-                    if (tag != null) {
-                        Text(
-                            text = tag,
-                            fontFamily = ManropeFontFamily,
-                            fontSize = 8.sp,
-                            letterSpacing = 1.sp,
-                            color = EvolveAccent
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                    }
-                    Text(
-                        text = title,
-                        fontFamily = ManropeFontFamily,
-                        fontSize = 13.sp,
-                        color = EvolveText
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = subtitle,
-                        fontFamily = ManropeFontFamily,
-                        fontSize = 11.sp,
-                        lineHeight = 16.sp,
-                        color = EvolveMuted
-                    )
-                    if (actionLabel != null && onActionClick != null) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        TextButton(
-                            onClick = onActionClick,
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
-                        ) {
-                            Text(
-                                text = actionLabel,
-                                fontFamily = ManropeFontFamily,
-                                fontSize = 11.sp,
-                                color = EvolveAccent
-                            )
+        Spacer(Modifier.height(28.dp))
+        Eyebrow(activeDate.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.ENGLISH)))
+        Spacer(Modifier.height(20.dp))
+        data class Entry(val time: String, val title: String, val copy: String, val locked: Boolean, val action: Boolean = false)
+        val entries = mutableListOf(
+            Entry(userProfile.collegeStart, "College", "Until ${PlannerEngine.formatTime12h(userProfile.collegeEnd)} · protected", true),
+            Entry(userProfile.gymStart, "Gym", "Until ${PlannerEngine.formatTime12h(userProfile.gymEnd)} · protected", true),
+            Entry(userProfile.callStart, "Evening call", "Protected for the rest of the evening", true))
+        if (slot?.date == activeDate.toString() && action.actionType != "add-task")
+            entries.add(Entry(slot.time24, action.title.replace("\n", " "), "${action.minutes} min · ${action.copy}", false, true))
+        entries.sortedBy { PlannerEngine.time(it.time) ?: LocalTime.MAX }.forEach { entry ->
+            Row(Modifier.fillMaxWidth().padding(bottom = 22.dp)) {
+                Text(entry.time, Modifier.width(54.dp), color = EvolveDim, fontFamily = SpaceGroteskFontFamily, fontSize = 12.sp)
+                Column(Modifier.weight(1f).clip(RoundedCornerShape(18.dp))
+                    .background(if (entry.action) EvolveRaised else EvolveBlack)
+                    .padding(if (entry.action) 16.dp else 0.dp)) {
+                    if (entry.action) { Eyebrow("Next step", true); Spacer(Modifier.height(8.dp)) }
+                    Text(entry.title, color = EvolveText, fontFamily = SpaceGroteskFontFamily, fontSize = 17.sp)
+                    Spacer(Modifier.height(5.dp))
+                    Text(entry.copy, color = EvolveMuted, fontSize = 12.sp, lineHeight = 19.sp)
+                    if (entry.action) TextButton(onClick = {
+                        when (action.actionType) {
+                            "brief-graphics" -> onOpenBriefClick("graphics")
+                            "brief-electrical" -> onOpenBriefClick("electrical")
+                            "task" -> onTaskClick(action.id)
+                            else -> onAddTask()
                         }
-                    }
-                }
-            }
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 4.dp)
-            ) {
-                if (tag != null) {
-                    Text(
-                        text = tag,
-                        fontFamily = ManropeFontFamily,
-                        fontSize = 8.sp,
-                        letterSpacing = 1.sp,
-                        color = EvolveAccent
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (isLocked) {
-                        Icon(
-                            imageVector = Icons.Outlined.Lock,
-                            contentDescription = "Protected",
-                            tint = EvolveDim,
-                            modifier = Modifier.size(12.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                    }
-                    Text(
-                        text = title,
-                        fontFamily = ManropeFontFamily,
-                        fontSize = 12.sp,
-                        color = if (isLocked) EvolveMuted else EvolveText
-                    )
-                }
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = subtitle,
-                    fontFamily = ManropeFontFamily,
-                    fontSize = 10.sp,
-                    lineHeight = 15.sp,
-                    color = EvolveMuted
-                )
-                if (actionLabel != null && onActionClick != null) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    TextButton(
-                        onClick = onActionClick,
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
-                    ) {
-                        Text(
-                            text = actionLabel,
-                            fontFamily = ManropeFontFamily,
-                            fontSize = 11.sp,
-                            color = EvolveAccent
-                        )
-                    }
+                    }) { Text("Open this step ↗", color = EvolveAccent) }
                 }
             }
         }
+        if (slot == null) Text("No available block fits the current duration and deadline. Edit your study window or reduce the task.", color = EvolveWarm, fontSize = 13.sp, lineHeight = 21.sp)
+        TextButton(onClick = onRescheduleClick) { Text("Find another time ↗", color = EvolveAccent) }
+        Spacer(Modifier.height(24.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Eyebrow("Your work", true)
+            TextButton(onClick = onAddTask) { Text("+ Add a step", color = EvolveAccent) }
+        }
+        if (tasks.isEmpty()) Text("Turn one actual question or topic into a small, executable step. Your plan grows from your own material.", color = EvolveMuted, fontSize = 14.sp, lineHeight = 23.sp)
+        tasks.sortedWith(compareBy<AcademicTaskEntity> { it.completed }.thenBy { PlannerEngine.date(it.dueDate) ?: LocalDate.MAX }).forEach { task ->
+            Row(Modifier.fillMaxWidth().clickable { onTaskClick(task.id) }.padding(vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(if (task.completed) "✓  ${task.title}" else task.title, color = if (task.completed) EvolveMuted else EvolveText, fontSize = 16.sp, fontFamily = SpaceGroteskFontFamily)
+                    Spacer(Modifier.height(5.dp))
+                    Text("${task.durationMinutes} min · ${if (task.dueDate.isBlank()) "Deadline unknown" else PlannerEngine.formatExamDate(task.dueDate)}", color = EvolveDim, fontSize = 12.sp)
+                }
+                TextButton(onClick = { onEditTask(task.id) }) { Text("Edit", color = EvolveAccent) }
+            }
+            HorizontalDivider(color = EvolveLine)
+        }
+        Spacer(Modifier.height(28.dp)); EvolveAction("Add a study task  +", onAddTask)
+        Spacer(Modifier.height(16.dp))
+        TextButton(onClick = onOpenStudyClick) { Text("Explore the sample Python lesson ↗", color = EvolveMuted) }
+        Text("One next block is suggested at a time. Other tasks stay in your queue; sample lessons do not become personal exam progress.", color = EvolveDim, fontSize = 11.sp, lineHeight = 18.sp)
+        Spacer(Modifier.height(120.dp))
     }
 }

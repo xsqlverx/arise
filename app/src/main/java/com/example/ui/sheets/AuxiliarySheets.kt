@@ -55,6 +55,8 @@ import androidx.compose.ui.unit.sp
 import com.example.data.model.ClassTipEntity
 import com.example.data.model.UserProfileEntity
 import com.example.domain.PlannerEngine
+import com.example.domain.NextAction
+import com.example.ui.components.EvolveField
 import com.example.domain.RescheduleSlot
 import com.example.ui.theme.EvolveAccent
 import com.example.ui.theme.EvolveBlack
@@ -71,12 +73,13 @@ import com.example.ui.theme.SpaceGroteskFontFamily
 
 @Composable
 fun WhyFirstSheet(
+    action: NextAction,
     onGetFirstBrief: () -> Unit,
     onClose: () -> Unit
 ) {
     BaseSheet(title = "Why this first?", onClose = onClose) {
         Text(
-            text = "Two assignments are due soon. Their questions are still unknown, so an accurate workload estimate cannot be made yet.",
+            text = action.copy,
             fontFamily = ManropeFontFamily,
             fontSize = 12.sp,
             lineHeight = 18.sp,
@@ -85,11 +88,11 @@ fun WhyFirstSheet(
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        ReasonStep(number = "01", title = "Urgency", desc = "Confirm the provisional 18 October submission deadline.")
+        ReasonStep(number = "01", title = "The deciding factor", desc = action.copy)
         Spacer(modifier = Modifier.height(14.dp))
-        ReasonStep(number = "02", title = "A missing prerequisite", desc = "The actual question sheet is needed to decide what work comes next.")
+        ReasonStep(number = "02", title = "How to begin", desc = action.firstStep)
         Spacer(modifier = Modifier.height(14.dp))
-        ReasonStep(number = "03", title = "A small starting cost", desc = "A ten-minute capture creates a specific next step.")
+        ReasonStep(number = "03", title = "A bounded step", desc = "${action.duration}. The recommendation uses your entered work; unknown scope and coverage remain unknown.")
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -99,7 +102,7 @@ fun WhyFirstSheet(
             shape = RoundedCornerShape(15.dp),
             colors = ButtonDefaults.buttonColors(containerColor = EvolvePillBg, contentColor = EvolvePillText)
         ) {
-            Text(text = "Get the first brief", fontFamily = ManropeFontFamily, fontSize = 13.sp)
+            Text(text = action.cta, fontFamily = ManropeFontFamily, fontSize = 13.sp)
             Spacer(modifier = Modifier.width(8.dp))
             Icon(imageVector = Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
         }
@@ -121,6 +124,7 @@ fun ReasonStep(number: String, title: String, desc: String) {
 @Composable
 fun RescheduleSheet(
     currentScheduledSlot: String,
+    action: NextAction,
     availableSlots: List<RescheduleSlot>,
     onSelectSlot: (String) -> Unit,
     onOpenSetup: () -> Unit,
@@ -128,7 +132,7 @@ fun RescheduleSheet(
 ) {
     BaseSheet(title = "Give it a real time.", onClose = onClose) {
         Text(
-            text = "The brief is still the missing piece. Choose a ten-minute slot around your protected commitments.",
+            text = "${action.title.replace("\n", " ")} · ${action.minutes} minutes. Choose a future block in your study window.",
             fontFamily = ManropeFontFamily,
             fontSize = 12.sp,
             lineHeight = 18.sp,
@@ -149,7 +153,7 @@ fun RescheduleSheet(
                 Text(text = "THE TRADE-OFF", fontFamily = ManropeFontFamily, fontSize = 9.sp, letterSpacing = 1.sp, color = EvolveAccent)
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Moving it later delays knowing how much work the assignment needs. A short capture now makes the next block easier to plan.",
+                    text = if (action.dueDate.isBlank()) "No confirmed deadline is available. Moving this step delays the next action; an exam consequence cannot be estimated yet." else "This step is due ${PlannerEngine.formatExamDate(action.dueDate)}. Only blocks that finish within that date are offered.",
                     fontFamily = ManropeFontFamily,
                     fontSize = 11.sp,
                     lineHeight = 17.sp,
@@ -177,11 +181,11 @@ fun RescheduleSheet(
             }
         } else {
             availableSlots.forEach { slot ->
-                val isSelected = currentScheduledSlot == slot.time24
+                val isSelected = currentScheduledSlot == slot.key
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onSelectSlot(slot.time24) }
+                        .clickable { onSelectSlot(slot.key) }
                         .padding(vertical = 12.dp)
                         .testTag("slot_option_${slot.time24}"),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -211,7 +215,7 @@ fun RescheduleSheet(
         Spacer(modifier = Modifier.height(14.dp))
 
         Text(
-            text = "Preview slots check the commitments entered in Setup. The planner checks college, gym, evening call, buffers and deadlines.",
+            text = "Blocks use your study window, current time, duration, confirmed deadline and protected college/gym/call windows. One study block is planned at a time.",
             fontFamily = ManropeFontFamily,
             fontSize = 10.sp,
             lineHeight = 16.sp,
@@ -224,6 +228,8 @@ fun RescheduleSheet(
 fun BriefCaptureSheet(
     subjectKey: String,
     briefText: String,
+    dueDate: String,
+    onDueDateChange: (String) -> Unit,
     onTextChange: (String) -> Unit,
     onSaveClick: () -> Unit,
     onClose: () -> Unit
@@ -300,12 +306,7 @@ fun BriefCaptureSheet(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        Text(
-            text = "18 October is a provisional deadline based on “due in two days.” Confirm the exact submission time.",
-            fontFamily = ManropeFontFamily,
-            fontSize = 10.sp,
-            color = EvolveDim
-        )
+        EvolveField("Confirmed due date · YYYY-MM-DD · optional", dueDate, onDueDateChange, hint = "Leave blank if unknown")
 
         Spacer(modifier = Modifier.height(18.dp))
 
@@ -457,6 +458,7 @@ fun SettingsSheet(
     profile: UserProfileEntity,
     onUpdateProfile: (UserProfileEntity) -> Unit,
     onExportBackup: () -> Unit,
+    onImportBackup: () -> Unit,
     onClearSamples: () -> Unit,
     onOpenSetup: () -> Unit,
     onClose: () -> Unit
@@ -563,6 +565,13 @@ fun SettingsSheet(
 
         Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(EvolveLine))
 
+        TextButton(onClick = onImportBackup) {
+            Text("Import a JSON backup ↗", color = EvolveAccent, fontFamily = ManropeFontFamily)
+        }
+        Text("Choose a block with Find another time to schedule reminders. Delivery is approximate; permission, battery settings and protected windows affect it.",
+            color = EvolveDim, fontSize = 11.sp, lineHeight = 18.sp)
+        Spacer(Modifier.height(16.dp))
+
         // Clear Example Notes
         Row(
             modifier = Modifier
@@ -597,60 +606,7 @@ fun BaseSheet(
     onClose: () -> Unit,
     content: @Composable () -> Unit
 ) {
-    val scrollState = rememberScrollState()
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xCC000000))
-            .clickable(onClick = onClose)
-    ) {
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                .background(EvolveSurface)
-                .border(1.dp, EvolveLine, RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                .clickable(enabled = false) {}
-                .statusBarsPadding()
-                .imePadding()
-                .navigationBarsPadding()
-                .padding(horizontal = 24.dp, vertical = 16.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(width = 34.dp, height = 3.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF48434F))
-                    .align(Alignment.CenterHorizontally)
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(text = title, fontFamily = SpaceGroteskFontFamily, fontSize = 24.sp, color = EvolveText)
-                IconButton(
-                    onClick = onClose,
-                    modifier = Modifier.size(36.dp).border(1.dp, EvolveLine, CircleShape)
-                ) {
-                    Icon(imageVector = Icons.Outlined.Close, contentDescription = "Close", tint = EvolveMuted, modifier = Modifier.size(16.dp))
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(scrollState)
-            ) {
-                content()
-            }
-        }
+    EvolveSheet(title, onClose) {
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) { content() }
     }
 }

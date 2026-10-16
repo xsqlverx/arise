@@ -4,23 +4,24 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import com.example.data.model.AcademicTaskEntity
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.data.model.ClassTipEntity
 import com.example.data.model.StudySessionEntity
 import com.example.data.model.SubjectEntity
 import com.example.data.model.UserProfileEntity
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 @Database(
     entities = [
         SubjectEntity::class,
         ClassTipEntity::class,
         StudySessionEntity::class,
-        UserProfileEntity::class
+        UserProfileEntity::class,
+        AcademicTaskEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class EvolveDatabase : RoomDatabase() {
@@ -28,6 +29,7 @@ abstract class EvolveDatabase : RoomDatabase() {
     abstract fun classTipDao(): ClassTipDao
     abstract fun studySessionDao(): StudySessionDao
     abstract fun userProfileDao(): UserProfileDao
+    abstract fun taskDao(): AcademicTaskDao
 
     companion object {
         @Volatile
@@ -40,8 +42,7 @@ abstract class EvolveDatabase : RoomDatabase() {
                     EvolveDatabase::class.java,
                     "evolve_academic.db"
                 )
-                    .addCallback(EvolveDatabaseCallback(scope))
-                    .fallbackToDestructiveMigration()
+                    .addMigrations(MIGRATION_1_2)
                     .build()
                 INSTANCE = instance
                 instance
@@ -49,18 +50,19 @@ abstract class EvolveDatabase : RoomDatabase() {
         }
     }
 
-    private class EvolveDatabaseCallback(
-        private val scope: CoroutineScope
-    ) : RoomDatabase.Callback() {
-        override fun onCreate(db: SupportSQLiteDatabase) {
-            super.onCreate(db)
-            INSTANCE?.let { database ->
-                scope.launch(Dispatchers.IO) {
-                    populateInitialData(database)
-                }
-            }
+    // Existing installations retain their notes/profile/results. Never erase a database on upgrade.
+    private object MIGRATION_1_2 : Migration(1, 2) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE study_sessions ADD COLUMN evidenceType TEXT NOT NULL DEFAULT 'legacy'")
+            db.execSQL("ALTER TABLE user_profile ADD COLUMN studyStart TEXT NOT NULL DEFAULT '16:00'")
+            db.execSQL("ALTER TABLE user_profile ADD COLUMN studyEnd TEXT NOT NULL DEFAULT '22:00'")
+            db.execSQL("ALTER TABLE user_profile ADD COLUMN graphicsDueDate TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE user_profile ADD COLUMN electricalDueDate TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE user_profile ADD COLUMN scheduledDate TEXT NOT NULL DEFAULT ''")
+            db.execSQL("CREATE TABLE IF NOT EXISTS academic_tasks (id TEXT NOT NULL PRIMARY KEY, subjectId TEXT NOT NULL, title TEXT NOT NULL, instructions TEXT NOT NULL, dueDate TEXT NOT NULL, durationMinutes INTEGER NOT NULL, completed INTEGER NOT NULL, createdAt INTEGER NOT NULL)")
         }
     }
+
 }
 
 suspend fun populateInitialData(database: EvolveDatabase) {
@@ -76,47 +78,16 @@ suspend fun populateInitialData(database: EvolveDatabase) {
     )
     database.subjectDao().insertAll(initialSubjects)
 
-    val initialTips = listOf(
-        ClassTipEntity(
-            id = "sample-electronics-1",
-            subjectId = "electronics",
-            kind = "Answer writing",
-            text = "Write your answer as clear, separate points. Give each idea its own line.",
-            pinned = true,
-            date = "2026-10-16",
-            isSample = true
-        ),
-        ClassTipEntity(
-            id = "sample-python-1",
-            subjectId = "python",
-            kind = "Answer writing",
-            text = "Show indentation clearly when writing Python by hand. Keep every statement in a block aligned.",
-            pinned = true,
-            date = "2026-10-16",
-            isSample = true
-        ),
-        ClassTipEntity(
-            id = "sample-maths-1",
-            subjectId = "maths",
-            kind = "Answer writing",
-            text = "Show each step of the working, including substitutions. Make the final answer easy to identify.",
-            pinned = true,
-            date = "2026-10-16",
-            isSample = true
-        )
-    )
-    database.classTipDao().insertAll(initialTips)
-
     val initialProfile = UserProfileEntity(
         id = 1,
         name = "",
-        examDate = "2026-11-07",
+        examDate = "",
         collegeStart = "07:45",
         collegeEnd = "14:30",
         gymStart = "20:00",
         gymEnd = "21:00",
         callStart = "22:30",
-        remindersEnabled = true,
+        remindersEnabled = false,
         reducedMotion = false,
         scheduledSlot = "15:30",
         graphicsBrief = "",
