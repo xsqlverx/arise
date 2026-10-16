@@ -1,0 +1,6 @@
+{
+  "name": "Evolve",
+  "description": "Academic companion with clear next moves, structured class notes, guided study, and intentional planning.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
