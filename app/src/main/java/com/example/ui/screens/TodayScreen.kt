@@ -51,6 +51,9 @@ fun TodayScreen(userProfile: UserProfileEntity, nextAction: NextAction, now: Loc
                     fontFamily = SpaceGroteskFontFamily, fontSize = 32.sp, color = EvolveText)
                 Text(if (days == null) "Exam date unknown" else if (days < 0) "Update exam date" else "days to ${PlannerEngine.formatExamDate(userProfile.examDate)}",
                     color = EvolveMuted, fontSize = 10.sp)
+                TextButton(onClick = onOpenExam,contentPadding = PaddingValues(horizontal = 0.dp)) {
+                    Text(if (portion == null) "Set topics ↗" else "Edit topics ↗",color = EvolveAccent,fontSize = 11.sp)
+                }
             }
         }
         AnimatedContent(nextAction, label = "next study step", transitionSpec = {
