@@ -191,10 +191,11 @@ class EvolveViewModel(application: Application) : AndroidViewModel(application) 
             } catch (e: Exception) { if (e is CancellationException) throw e; showToast("Local storage could not open. Reopen the app to retry.") }
         }
         viewModelScope.launch {
-            repository.userProfile.filterNotNull().combine(repository.tasks) { profile, rows -> profile to rows }
-                .collectLatest { (profile, rows) -> withContext(Dispatchers.IO) {
-                    ReminderScheduler.sync(application, profile, PlannerEngine.determineNextAction(profile, rows))
-                } }
+            combine(repository.userProfile.filterNotNull(), repository.tasks, repository.semester, repository.curriculumAttempts) { profile, rows, semester, attempts ->
+                profile to com.example.domain.AcademicPlanner.next(profile, rows, semester?.let(com.example.domain.CurriculumCodec::accepted), attempts)
+            }.collectLatest { (profile, action) -> withContext(Dispatchers.IO) {
+                ReminderScheduler.sync(application, profile, action)
+            } }
         }
     }
 
@@ -455,8 +456,10 @@ class EvolveViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun chooseRescheduleSlot(slotTime: String) = updateRecords {
-        val slot = PlannerEngine.getAvailableSlots(userProfile.value, durationMinutes = currentAction().minutes,
-            dueDate = currentAction().dueDate).find { it.key == slotTime }
+        val action = com.example.domain.AcademicPlanner.next(userProfile.value, tasks.value,
+            db.curriculumDao().semesterNow()?.let(com.example.domain.CurriculumCodec::accepted), db.curriculumDao().attemptsNow())
+        val slot = PlannerEngine.getAvailableSlots(userProfile.value, durationMinutes = action.minutes,
+            dueDate = action.dueDate).find { it.key == slotTime }
         if (slot == null) { showToast("That block is no longer available. Choose another time."); return@updateRecords }
         repository.updateScheduledSlot(slot.time24, slot.date, userProfile.value)
         _selectedDate.value = LocalDate.parse(slot.date)
@@ -478,6 +481,14 @@ class EvolveViewModel(application: Application) : AndroidViewModel(application) 
             } catch (e: Exception) { if (e is CancellationException) throw e; showToast("Could not save settings. Try again.") }
             finally { _isSaving.value = false }
         }
+    }
+
+    fun addCurriculumPractice(subject: String, title: String, instructions: String, onSaved: (String) -> Unit) = updateRecords {
+        val id = "practice-${UUID.randomUUID()}"
+        require(subjects.value.any { it.id == subject })
+        repository.saveTask(AcademicTaskEntity(id,subject,title,instructions))
+        showToast("Practice saved in Plan. Start with your own class question; edit the step when you have it.")
+        onSaved(id)
     }
 
     fun clearSampleNotes() = updateRecords {
@@ -514,7 +525,7 @@ class EvolveViewModel(application: Application) : AndroidViewModel(application) 
         _noteFilter.value = filter
     }
 
-    fun currentAction() = PlannerEngine.determineNextAction(userProfile.value, tasks.value)
+
 
     fun saveTask(task: AcademicTaskEntity) {
         if (_isSaving.value) return

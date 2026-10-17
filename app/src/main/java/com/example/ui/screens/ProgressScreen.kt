@@ -16,7 +16,7 @@ import com.example.ui.theme.*
 import java.time.LocalDate
 
 @Composable
-fun ProgressScreen(sessions: List<StudySessionEntity>, tasks: List<AcademicTaskEntity>,
+fun ProgressScreen(curriculumAttempts: List<CurriculumAttemptEntity>, onOpenSemester: () -> Unit, sessions: List<StudySessionEntity>, tasks: List<AcademicTaskEntity>,
     onOpenSubjectsClick: () -> Unit, onSettingsClick: () -> Unit, onOpenSample: () -> Unit) {
     val completed = tasks.count { it.completed }
     val sample = sessions.filter { it.total > 0 && it.score in 0..it.total && it.isSample && it.evidenceType == "sample_quiz" }
@@ -44,6 +44,16 @@ fun ProgressScreen(sessions: List<StudySessionEntity>, tasks: List<AcademicTaskE
         Text("Task completion is self-reported activity. It does not measure understanding, syllabus coverage or exam readiness.",
             color = EvolveMuted, fontSize = 13.sp, lineHeight = 22.sp)
         Spacer(Modifier.height(24.dp)); HorizontalDivider(color = EvolveLine)
+        Spacer(Modifier.height(24.dp)); Eyebrow("Syllabus starter checks", true)
+        Spacer(Modifier.height(12.dp))
+        Text("${curriculumAttempts.size} saved attempts · ${curriculumAttempts.map { it.moduleId }.distinct().size} starter concepts tried",
+            color = EvolveText, fontFamily = SpaceGroteskFontFamily, fontSize = 23.sp, lineHeight = 30.sp)
+        Text("These are narrow authored checks. Repeats use the same questions; there is no whole-module completion percentage.", color = EvolveMuted, fontSize = 13.sp, lineHeight = 22.sp)
+        curriculumAttempts.take(12).forEach { a ->
+            Spacer(Modifier.height(12.dp))
+            Text("${a.moduleId.uppercase()} · ${a.score}/${a.total} · review ${a.reviewDate}",color = EvolveAccent,fontSize = 12.sp)
+        }
+        TextButton(onClick = onOpenSemester) { Text("Choose a concept / see uncovered topics ↗",color=EvolveAccent) }
         Spacer(Modifier.height(24.dp)); Eyebrow("Sample practice · separate from your coursework", true)
         Spacer(Modifier.height(12.dp))
         if (sample.isEmpty()) {

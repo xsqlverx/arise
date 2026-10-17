@@ -6,8 +6,9 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 data class Backup(val profile: UserProfileEntity, val subjects: List<SubjectEntity>,
-        val notes: List<ClassTipEntity>, val sessions: List<StudySessionEntity>, val tasks: List<AcademicTaskEntity>) {
-        val summary: String get() = "${subjects.size} subjects, ${notes.size} notes, ${sessions.size} checks and ${tasks.size} tasks. Matching IDs are replaced; other records are kept. Settings are restored."
+        val notes: List<ClassTipEntity>, val sessions: List<StudySessionEntity>, val tasks: List<AcademicTaskEntity>,
+        val semester: SemesterEntity? = null, val curriculumAttempts: List<CurriculumAttemptEntity> = emptyList()) {
+        val summary: String get() = "${subjects.size} subjects, ${notes.size} notes, ${sessions.size} checks and ${tasks.size} tasks. ${curriculumAttempts.size} syllabus checks; ${if (semester != null) "semester included" else "no semester"}. Matching IDs are replaced (syllabus attempts keep the first saved copy); other records are kept. Settings are restored."
     }
 
 
@@ -17,10 +18,11 @@ object BackupCodec {
         tipsList: List<ClassTipEntity>,
         sessionsList: List<StudySessionEntity>,
         profile: UserProfileEntity,
-        taskList: List<AcademicTaskEntity> = emptyList()
+        taskList: List<AcademicTaskEntity> = emptyList(),
+        semester: SemesterEntity? = null, curriculumAttempts: List<CurriculumAttemptEntity> = emptyList()
     ): String {
         val root = JSONObject()
-        root.put("version", 2)
+        root.put("version", 3)
         root.put("exportedAt", System.currentTimeMillis())
 
         val pObj = JSONObject().apply {
@@ -93,13 +95,21 @@ object BackupCodec {
             }) }
         })
 
+        semester?.let { row -> root.put("semester", JSONObject().apply {
+            put("pack", JSONObject(row.packJson)); put("focus", JSONArray(row.focusJson))
+            put("electricalMarks", row.electricalMarks); put("electronicsMarks", row.electronicsMarks)
+        }) }
+        root.put("curriculumAttempts", JSONArray().apply { curriculumAttempts.forEach { a -> put(JSONObject().apply {
+            put("id", a.id); put("moduleId", a.moduleId); put("answers", JSONArray(a.answersJson)); put("recall", a.recall)
+            put("score", a.score); put("total", a.total); put("timestamp", a.timestamp); put("reviewDate", a.reviewDate)
+        }) } })
         return root.toString(2)
     }
 
     fun decode(json: String): Backup {
         require(json.length <= 5_000_000) { "Backup is too large." }
         val root = JSONObject(json)
-        require(root.get("version") is Number && root.getInt("version") in 1..2) { "Unsupported backup version." }
+        require(root.get("version").let { it is Number && it.toDouble() == it.toInt().toDouble() && it.toInt() in 1..3 }) { "Unsupported backup version." }
         fun JSONObject.text(key: String, fallback: String? = null): String {
             if (!has(key) && fallback != null) return fallback
             require(get(key) is String) { "Invalid $key" }
@@ -135,7 +145,7 @@ object BackupCodec {
         val subjects = rows("subjects") { SubjectEntity(it.text("id"), it.text("name"), it.text("subtitle", ""), it.text("icon", "notes"), it.number("orderIndex").toInt()) }
         val notes = rows("notes") { ClassTipEntity(it.text("id"), it.text("subjectId"), it.text("kind", "General"), it.text("text"), it.flag("pinned"), it.text("date"), it.flag("isSample"), it.number("createdAt")) }
         val sessions = rows("sessions") { StudySessionEntity(it.text("id"), it.text("subjectId"), it.number("score").toInt(), it.number("total").toInt(), it.text("date"), it.flag("isSample"), it.number("timestamp"), it.text("evidenceType", "legacy")) }
-        val tasks = if (root.getInt("version") == 2) rows("tasks") { AcademicTaskEntity(it.text("id"), it.text("subjectId"), it.text("title"), it.text("instructions"), it.text("dueDate", ""), it.number("durationMinutes", 25).toInt(), it.flag("completed"), it.number("createdAt")) } else emptyList()
+        val tasks = if (root.getInt("version") >= 2) rows("tasks") { AcademicTaskEntity(it.text("id"), it.text("subjectId"), it.text("title"), it.text("instructions"), it.text("dueDate", ""), it.number("durationMinutes", 25).toInt(), it.flag("completed"), it.number("createdAt")) } else emptyList()
         fun ids(values: List<String>) { require(values.all { it.isNotBlank() && it.length <= 200 } && values.distinct().size == values.size) { "Invalid or duplicate IDs." } }
         ids(subjects.map { it.id }); ids(notes.map { it.id }); ids(sessions.map { it.id }); ids(tasks.map { it.id })
         require(subjects.isNotEmpty()) { "No subject records in backup." }
@@ -145,7 +155,20 @@ object BackupCodec {
         require(notes.all { it.subjectId in subjectIds && it.text.isNotBlank() && PlannerEngine.date(it.date) != null })
         require(sessions.all { it.subjectId in subjectIds && it.total in 0..10000 && it.score in 0..it.total && PlannerEngine.date(it.date) != null })
         require(tasks.all { it.subjectId in subjectIds && it.title.isNotBlank() && it.durationMinutes in 5..120 && (it.dueDate.isBlank() || PlannerEngine.date(it.dueDate) != null) })
-        return Backup(profile, subjects, notes, sessions, tasks)
+        val semester = if (root.has("semester")) root.getJSONObject("semester").let { row ->
+            SemesterEntity(packJson = row.getJSONObject("pack").toString(), focusJson = row.getJSONArray("focus").toString(),
+                electricalMarks = row.number("electricalMarks", 20).toInt(), electronicsMarks = row.number("electronicsMarks", 20).toInt())
+        } else null
+        val accepted = semester?.let { com.example.domain.CurriculumCodec.accepted(it) }
+        val attempts = if (root.getInt("version") >= 3) rows("curriculumAttempts") { a ->
+            CurriculumAttemptEntity(a.text("id"), a.text("moduleId"), a.getJSONArray("answers").toString(), a.text("recall"),
+                a.number("score").toInt(), a.number("total").toInt(), a.number("timestamp"), a.text("reviewDate"))
+        } else emptyList()
+        ids(attempts.map { it.id })
+        require(attempts.isEmpty() || accepted != null) { "Checkpoints need their semester map." }
+        attempts.forEach { com.example.domain.CurriculumCodec.validateAttempt(it, accepted!!) }
+        require(accepted == null || accepted.pack.courses.all { c -> c.notebooks.all { it in subjectIds } })
+        return Backup(profile, subjects, notes, sessions, tasks, semester, attempts)
     }
 
 }

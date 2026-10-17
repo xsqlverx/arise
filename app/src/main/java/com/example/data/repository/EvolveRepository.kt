@@ -10,7 +10,6 @@ import com.example.data.model.AcademicTaskEntity
 import com.example.domain.PlannerEngine
 import androidx.room.withTransaction
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.Flow
 import org.json.JSONArray
 import org.json.JSONObject
@@ -22,6 +21,39 @@ class EvolveRepository(private val db: EvolveDatabase) {
     val allTips: Flow<List<ClassTipEntity>> = db.classTipDao().getAllTips()
     val sessions: Flow<List<StudySessionEntity>> = db.studySessionDao().getAllSessions()
     val userProfile: Flow<UserProfileEntity?> = db.userProfileDao().getProfile()
+    val semester = db.curriculumDao().observeSemester()
+    val curriculumAttempts = db.curriculumDao().observeAttempts()
+
+    suspend fun acceptSemester(json: String) {
+        val pack = com.example.domain.CurriculumCodec.decode(json)
+        db.withTransaction {
+            val current = db.curriculumDao().semesterNow()
+            val row = current?.copy(packJson = json) ?: com.example.data.model.SemesterEntity(packJson = json,
+                focusJson = JSONArray(pack.modules.filter { it.focus }.map { it.id }).toString())
+            com.example.domain.CurriculumCodec.accepted(row)
+            val notebooks = db.subjectDao().getNow()
+            val existing = notebooks.map { it.id }.toSet()
+            notebooks.find { it.id == "chemistry" && it.name == "Chemistry" && it.subtitle == "Confirm full course title" }?.let {
+                db.subjectDao().update(it.copy(subtitle = "For Information Science / A105CYT02"))
+            }
+            pack.courses.forEach { course -> course.notebooks.filter { it !in existing }.forEach { id ->
+                db.subjectDao().insert(SubjectEntity(id, if (id == "workshop") "EEE workshop" else id.replaceFirstChar { it.uppercase() },
+                    course.code, "notes", db.subjectDao().count()))
+            } }
+            db.curriculumDao().saveSemester(row)
+        }
+    }
+    suspend fun saveSemester(row: com.example.data.model.SemesterEntity) {
+        com.example.domain.CurriculumCodec.accepted(row)
+        db.curriculumDao().saveSemester(row)
+    }
+    suspend fun recordCurriculumAttempt(row: com.example.data.model.CurriculumAttemptEntity) {
+        db.withTransaction {
+            val semester = db.curriculumDao().semesterNow() ?: error("Import the semester first")
+            com.example.domain.CurriculumCodec.validateAttempt(row, com.example.domain.CurriculumCodec.accepted(semester))
+            db.curriculumDao().insertAttempt(row)
+        }
+    }
     val tasks: Flow<List<AcademicTaskEntity>> = db.taskDao().observeAll()
 
     suspend fun checkAndSeed() {
@@ -116,7 +148,14 @@ class EvolveRepository(private val db: EvolveDatabase) {
 
     fun exportBackupJson(subjectsList: List<SubjectEntity>, tipsList: List<ClassTipEntity>,
         sessionsList: List<StudySessionEntity>, profile: UserProfileEntity,
-        taskList: List<AcademicTaskEntity> = emptyList()) = BackupCodec.encode(subjectsList, tipsList, sessionsList, profile, taskList)
+        taskList: List<AcademicTaskEntity> = emptyList(), semesterRow: com.example.data.model.SemesterEntity? = null,
+        attempts: List<com.example.data.model.CurriculumAttemptEntity> = emptyList()) = BackupCodec.encode(subjectsList, tipsList, sessionsList, profile, taskList, semesterRow, attempts)
+
+    suspend fun exportCurrentBackup(): String = db.withTransaction {
+        BackupCodec.encode(db.subjectDao().getNow(), db.classTipDao().getNow(),
+            db.studySessionDao().getNow(), db.userProfileDao().getNow() ?: UserProfileEntity(),
+            db.taskDao().getNow(), db.curriculumDao().semesterNow(), db.curriculumDao().attemptsNow())
+    }
 
     fun readBackup(json: String) = BackupCodec.decode(json)
 
@@ -126,6 +165,8 @@ class EvolveRepository(private val db: EvolveDatabase) {
             db.classTipDao().insertAll(backup.notes)
             db.studySessionDao().insertAll(backup.sessions)
             db.taskDao().saveAll(backup.tasks)
+            backup.semester?.let { db.curriculumDao().saveSemester(it) }
+            backup.curriculumAttempts.forEach { db.curriculumDao().insertAttempt(it) }
             db.userProfileDao().insertOrUpdate(backup.profile.copy(remindersEnabled = false))
         }
     }

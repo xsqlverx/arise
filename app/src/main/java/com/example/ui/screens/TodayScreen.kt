@@ -66,6 +66,7 @@ fun TodayScreen(
     userProfile: UserProfileEntity,
     nextAction: NextAction,
     now: LocalDateTime,
+    onOpenSemester: () -> Unit,
     onNextActionClick: (String) -> Unit,
     onWhyFirstClick: () -> Unit,
     onRescheduleClick: () -> Unit,
@@ -317,6 +318,10 @@ fun TodayScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        TextButton(onClick = onOpenSemester) {
+            Text("My semester · syllabus, focus & practice ↗", color = EvolveAccent, fontSize = 13.sp)
+        }
+        Spacer(Modifier.height(12.dp))
         // On the horizon section
         Row(
             modifier = Modifier.fillMaxWidth(),

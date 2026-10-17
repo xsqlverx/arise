@@ -457,6 +457,7 @@ fun UnsavedDraftDialog(
 fun SettingsSheet(
     profile: UserProfileEntity,
     onUpdateProfile: (UserProfileEntity) -> Unit,
+    onOpenSemester: () -> Unit,
     onExportBackup: () -> Unit,
     onImportBackup: () -> Unit,
     onClearSamples: () -> Unit,
@@ -473,6 +474,7 @@ fun SettingsSheet(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        TextButton(onClick = onOpenSemester) { Text("My semester / import syllabus ↗", color = EvolveAccent) }
         // Reminders Toggle
         Row(
             modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),

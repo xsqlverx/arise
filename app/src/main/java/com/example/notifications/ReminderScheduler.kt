@@ -81,7 +81,7 @@ object ReminderScheduler {
         fun launch(value: String, code: Int) = PendingIntent.getActivity(c, code,
             Intent(c, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP).putExtra("evolve_action", value),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val open = launch(if (action.actionType == "task") "task:${action.id}" else action.actionType, 420)
+        val open = launch(if (action.actionType in listOf("task", "curriculum")) "${action.actionType}:${action.id}" else action.actionType, 420)
         val busy = PendingIntent.getBroadcast(c, 422, Intent(c, ReminderReceiver::class.java)
             .setAction("evolve.snooze").putExtra("token", token), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val notification = NotificationCompat.Builder(c, CHANNEL).setSmallIcon(R.drawable.ic_stat_evolve)
@@ -102,7 +102,8 @@ class ReminderReceiver : BroadcastReceiver() {
             try {
                 val db = EvolveDatabase.getDatabase(context, this)
                 val profile = db.userProfileDao().getNow() ?: return@launch
-                val action = PlannerEngine.determineNextAction(profile, db.taskDao().getNow())
+                val action = com.example.domain.AcademicPlanner.next(profile, db.taskDao().getNow(),
+                    db.curriculumDao().semesterNow()?.let(com.example.domain.CurriculumCodec::accepted), db.curriculumDao().attemptsNow())
                 if (intent.action == "evolve.remind" || intent.action == "evolve.snooze") ReminderScheduler.deliver(context, profile, action, intent)
                 else ReminderScheduler.sync(context, profile, action, true)
             } catch (_: Exception) { /* A denied/revoked permission must not crash a background receiver. */ }

@@ -70,6 +70,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.ui.CurriculumViewModel
+import com.example.ui.screens.CurriculumScreen
+import com.example.domain.AcademicPlanner
 import com.example.domain.PlannerEngine
 import com.example.ui.ActiveSheet
 import com.example.ui.EvolveViewModel
@@ -119,6 +122,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun EvolveApp(
     viewModel: EvolveViewModel = viewModel(),
+    curriculum: CurriculumViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
     incomingAction: String? = null,
     onIncomingHandled: () -> Unit = {}
 ) {
@@ -173,9 +177,19 @@ fun EvolveApp(
     val isSaving by viewModel.isSaving.collectAsStateWithLifecycle()
     val briefDueDate by viewModel.briefDueDate.collectAsStateWithLifecycle()
     val pendingBackup by viewModel.pendingBackup.collectAsStateWithLifecycle()
-    val nextAction = PlannerEngine.determineNextAction(userProfile, tasks)
+    val semester by curriculum.semester.collectAsStateWithLifecycle()
+    val curriculumAttempts by curriculum.attempts.collectAsStateWithLifecycle()
+    val curriculumOpen by curriculum.open.collectAsStateWithLifecycle()
+    val nextAction = AcademicPlanner.next(userProfile, tasks, semester, curriculumAttempts, now.toLocalDate())
+    fun openSemester() {
+        viewModel.exitStudyFlow()
+        viewModel.closeSettings()
+        viewModel.requestCloseSheet()
+        curriculum.show()
+    }
     val reducedMotion = userProfile.reducedMotion || Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
     val route = when {
+        curriculumOpen -> "curriculum"
         isSetupScreenOpen -> "setup"
         isStudyActive -> "study:${activeTaskId ?: "sample"}"
         isViewingNotes -> "notes:$activeSubjectId"
@@ -183,6 +197,8 @@ fun EvolveApp(
     }
     fun openAction(type: String, id: String = nextAction.id) {
         when (type) {
+            "semester" -> openSemester()
+            "curriculum" -> { openSemester(); curriculum.startModule(id, review = true) }
             "brief-graphics" -> viewModel.openSheet(ActiveSheet.BriefCapture("graphics"))
             "brief-electrical" -> viewModel.openSheet(ActiveSheet.BriefCapture("electrical"))
             "task" -> viewModel.openTaskFlow(id)
@@ -194,7 +210,8 @@ fun EvolveApp(
     LaunchedEffect(now.toLocalDate()) { if (selectedDate < now.toLocalDate()) viewModel.setActiveDate(now.toLocalDate()) }
     LaunchedEffect(incomingAction, ready) {
         if (incomingAction != null && ready) {
-            if (incomingAction.startsWith("task:")) openAction("task", incomingAction.removePrefix("task:"))
+            if (incomingAction.startsWith("curriculum:")) openAction("curriculum", incomingAction.removePrefix("curriculum:"))
+            else if (incomingAction.startsWith("task:")) openAction("task", incomingAction.removePrefix("task:"))
             else openAction(incomingAction)
             onIncomingHandled()
         }
@@ -206,7 +223,7 @@ fun EvolveApp(
     val exportFile = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         if (uri != null) scope.launch {
             try {
-                val json = withContext(Dispatchers.IO) { viewModel.repository.exportBackupJson(subjects, allTips, sessions, userProfile, tasks) }
+                val json = withContext(Dispatchers.IO) { viewModel.repository.exportCurrentBackup() }
                 withContext(Dispatchers.IO) { context.contentResolver.openOutputStream(uri)?.use { it.write(json.toByteArray(Charsets.UTF_8)) } ?: error("File could not open") }
                 viewModel.showToast("Backup saved.")
             } catch (e: Exception) { viewModel.showToast("Backup could not be saved. Try another location.") }
@@ -237,6 +254,7 @@ fun EvolveApp(
     // Hardware Back Handler Navigation
     BackHandler(enabled = !imeVisible) {
         when {
+            curriculumOpen -> curriculum.back()
             showUnsavedDialog -> viewModel.dismissUnsavedDialog(discardDraft = false)
             activeSheet != null -> viewModel.requestCloseSheet()
             isStudyActive -> viewModel.exitStudyFlow()
@@ -272,6 +290,11 @@ fun EvolveApp(
             savedScreens.SaveableStateProvider(screen) {
             when {
                 screen == "loading" -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = EvolveAccent) }
+                screen == "curriculum" -> CurriculumScreen(curriculum, { curriculum.back() },
+                    onNotebook = { id -> curriculum.back(); viewModel.openSubjectNotebook(id) },
+                    onPractice = { subject, title, instructions -> viewModel.addCurriculumPractice(subject,title,instructions) { id ->
+                        curriculum.close(); viewModel.openTaskFlow(id)
+                    } })
                 screen == "setup" -> {
                     SetupScreen(
                         currentProfile = userProfile,
@@ -344,6 +367,7 @@ fun EvolveApp(
                                 userProfile = userProfile,
                                 now = now,
                                 nextAction = nextAction,
+                                onOpenSemester = { openSemester() },
                                 onNextActionClick = { openAction(it) },
                                 onWhyFirstClick = { viewModel.openSheet(ActiveSheet.WhyFirst) },
                                 onRescheduleClick = { viewModel.openSheet(ActiveSheet.Reschedule) },
@@ -359,6 +383,9 @@ fun EvolveApp(
                                 tasks = tasks,
                                 now = now,
                                 activeDate = selectedDate,
+                                nextAction = nextAction,
+                                onOpenAction = { openAction(nextAction.actionType) },
+                                onOpenSemester = { openSemester() },
                                 onSelectDate = { viewModel.setActiveDate(it) },
                                 onRescheduleClick = { viewModel.openSheet(ActiveSheet.Reschedule) },
                                 onOpenBriefClick = { key -> viewModel.openSheet(ActiveSheet.BriefCapture(key)) },
@@ -386,6 +413,8 @@ fun EvolveApp(
                         }
                         NavDestination.PROGRESS -> {
                             ProgressScreen(
+                                curriculumAttempts = curriculumAttempts,
+                                onOpenSemester = { openSemester() },
                                 sessions = sessions,
                                 tasks = tasks,
                                 onOpenSample = { viewModel.openStudyFlow() },
@@ -402,7 +431,7 @@ fun EvolveApp(
 
             // Floating Smoked-Glass Capsule Navigation Dock
             // Hides when sheets, study session, or settings are active!
-            val isDockVisible = ready && activeSheet == null && !isStudyActive && !isSettingsOpen && !isSetupScreenOpen && !imeVisible
+            val isDockVisible = ready && !curriculumOpen && activeSheet == null && !isStudyActive && !isSettingsOpen && !isSetupScreenOpen && !imeVisible
             GlassDock(
                 currentDestination = currentDest,
                 onNavigate = { dest ->
@@ -523,6 +552,7 @@ fun EvolveApp(
                             permission.launch(Manifest.permission.POST_NOTIFICATIONS)
                         else viewModel.updateProfile(updated)
                     },
+                    onOpenSemester = { openSemester() },
                     onExportBackup = { exportFile.launch("Evolve-backup-${LocalDate.now()}.json") },
                     onImportBackup = { importFile.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) },
                     onClearSamples = { viewModel.clearSampleNotes() },

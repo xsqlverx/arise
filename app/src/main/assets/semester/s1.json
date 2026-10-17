@@ -1,0 +1,694 @@
+{
+  "format": "evolve.semester",
+  "version": 1,
+  "id": "s1-aisat-2026",
+  "title": "S1 · A place to start",
+  "scopeStatus": "Modules 3–4 are an estimate for the next IE, not a teacher-confirmed portion. EE uses global modules 1–2; EC uses 3–4. Keep both until the EE portion is confirmed.",
+  "courses": [
+    {
+      "id": "a105mat01",
+      "code": "A105MAT01",
+      "title": "Mathematics for Information Science - 1",
+      "kind": "theory",
+      "notebooks": [
+        "maths"
+      ],
+      "source": {
+        "asset": "semester/sources/A105MAT01-Mathematics-for-Information-Science-1.pdf",
+        "sha256": "77ea5f58b2ef7ba3519dd0a04b1789c73f3a9cd7c307f6eae43ac8890d3fbcc3",
+        "pages": 5
+      },
+      "notes": [],
+      "modules": [
+        {
+          "id": "a105mat01-m1",
+          "number": 1,
+          "title": "Single-variable calculus foundations",
+          "pages": [
+            1
+          ],
+          "topics": [
+            "Limits and continuity",
+            "Derivative at a point and derivative as a function",
+            "Second and higher derivatives",
+            "Instantaneous rates of change",
+            "Chain rule",
+            "Implicit differentiation",
+            "Tangents and normal lines",
+            "Linearization",
+            "Concavity and the second derivative test"
+          ],
+          "notes": [
+            "Text 1 sections 2.2, 2.5, 3.1, 3.2, 3.3, 3.4, 3.6, 3.7, 3.9, 4.4 as printed"
+          ],
+          "component": "maths",
+          "focus": false
+        },
+        {
+          "id": "a105mat01-m2",
+          "number": 2,
+          "title": "Functions of several variables and partial derivatives",
+          "pages": [
+            1
+          ],
+          "topics": [
+            "Domains and ranges",
+            "Level curves",
+            "Limits and continuity of functions of two variables",
+            "Partial derivatives",
+            "Partial derivatives and continuity",
+            "Second-order partial derivatives",
+            "Mixed derivative theorem",
+            "Chain rule for functions of two variables"
+          ],
+          "notes": [
+            "Text 1 sections 14.1-14.4 as printed"
+          ],
+          "component": "maths",
+          "focus": false
+        },
+        {
+          "id": "a105mat01-m3",
+          "number": 3,
+          "title": "Directional derivatives and unconstrained optimization",
+          "pages": [
+            2
+          ],
+          "topics": [
+            "Chain rule for functions of three variables",
+            "Directional derivatives and interpretation",
+            "Gradient",
+            "Properties of directional derivatives",
+            "Local extrema of functions of two variables",
+            "Critical and saddle points",
+            "Second derivative test for local extrema",
+            "Absolute maxima and minima on closed bounded regions"
+          ],
+          "notes": [
+            "Text 1 sections 14.4, 14.5, 14.7 as printed"
+          ],
+          "component": "maths",
+          "focus": true
+        },
+        {
+          "id": "a105mat01-m4",
+          "number": 4,
+          "title": "Constrained optimization and linear programming",
+          "pages": [
+            2
+          ],
+          "topics": [
+            "Constrained maxima and minima",
+            "Lagrange multipliers with one and two constraints",
+            "Steepest descent for two variables",
+            "Formulation of linear programming problems",
+            "Graphical solution of LPP"
+          ],
+          "notes": [
+            "Text 1 section 14.8 and Text 2 sections 22.1, 22.2 as printed"
+          ],
+          "component": "maths",
+          "focus": true
+        }
+      ],
+      "activities": []
+    },
+    {
+      "id": "a105cyt02",
+      "code": "A105CYT02",
+      "title": "Chemistry for Information Science",
+      "kind": "theory_with_lab",
+      "notebooks": [
+        "chemistry"
+      ],
+      "source": {
+        "asset": "semester/sources/A105CYT02-Chemistry-for-Information-Science-1.pdf",
+        "sha256": "e4b6a65e9105f9318421b27e53500a922242b6ac3f9a782a63c0c6b4072f8074",
+        "pages": 7
+      },
+      "notes": [
+        "Lead-acid, nickel-cadmium and nickel-metal-hydride battery construction/working/applications are listed as self-study, excluded from end-semester examination. Do not extend this exclusion to an internal exam without confirmation.",
+        "15 listed lab experiments; any 10 mandatory. The actual experiments selected/completed by this class are unknown."
+      ],
+      "modules": [
+        {
+          "id": "a105cyt02-m1",
+          "number": 1,
+          "title": "Electrochemistry and corrosion science",
+          "pages": [
+            1
+          ],
+          "topics": [
+            "Electrochemical cells and electrode potential",
+            "Nernst equation for single electrodes and cells, including numerical problems",
+            "SHE and calomel reference electrodes",
+            "Electrochemical series and applications",
+            "Glass electrode and pH measurement",
+            "Conductivity and digital conductivity meter",
+            "Li-ion battery",
+            "Hydrogen-oxygen fuel cell with acid electrolyte",
+            "Electrochemical corrosion in acidic and alkaline media",
+            "Galvanic series",
+            "Sacrificial anodic and impressed-current cathodic protection",
+            "Copper electroplating and electroless plating"
+          ],
+          "notes": [],
+          "component": "chemistry",
+          "focus": false
+        },
+        {
+          "id": "a105cyt02-m2",
+          "number": 2,
+          "title": "Materials for electronic applications",
+          "pages": [
+            2
+          ],
+          "topics": [
+            "Nanomaterial classification by dimension and material",
+            "Sol-gel and chemical-reduction synthesis",
+            "Carbon nanotubes, fullerenes, graphene and carbon quantum dots",
+            "Fire-retardant polymers with examples",
+            "Conducting polymer classification",
+            "Polyaniline and polypyrrole",
+            "OLED and dye-sensitized solar cells",
+            "Materials for quantum computing",
+            "Supercapacitors",
+            "Spintronics"
+          ],
+          "notes": [],
+          "component": "chemistry",
+          "focus": false
+        },
+        {
+          "id": "a105cyt02-m3",
+          "number": 3,
+          "title": "Molecular spectroscopy and analytical techniques",
+          "pages": [
+            2
+          ],
+          "topics": [
+            "Types of spectra and molecular energy levels",
+            "Beer-Lambert law including numerical problems",
+            "Electronic spectroscopy and electronic transitions",
+            "Conjugation and absorption maxima",
+            "Electronic spectroscopy instrumentation and applications",
+            "Vibrational spectroscopy",
+            "Vibrational modes of CO2 and H2O",
+            "Dielectric thermal analysis of polymers (DETA)",
+            "Scanning electron microscopy (SEM)"
+          ],
+          "notes": [],
+          "component": "chemistry",
+          "focus": true
+        },
+        {
+          "id": "a105cyt02-m4",
+          "number": 4,
+          "title": "Environmental chemistry",
+          "pages": [
+            2
+          ],
+          "topics": [
+            "Water hardness and hardness numericals",
+            "Ion-exchange softening",
+            "Reverse osmosis",
+            "Chlorination and breakpoint chlorination",
+            "Ozone and UV disinfection",
+            "DO, BOD and COD",
+            "Primary, secondary and tertiary sewage treatment",
+            "Trickling filters and UASB",
+            "E-waste recycling, recovery and reuse",
+            "Greenhouse gases and ozone depletion",
+            "Sustainable development and introductory SDGs"
+          ],
+          "notes": [],
+          "component": "chemistry",
+          "focus": true
+        }
+      ],
+      "activities": []
+    },
+    {
+      "id": "a105est03",
+      "code": "A105EST03",
+      "title": "Engineering Graphics and Computer Aided Drawing",
+      "kind": "theory_with_lab",
+      "notebooks": [
+        "graphics"
+      ],
+      "source": {
+        "asset": "semester/sources/A105EST03-Engineering-Graphics-and-Computer-Aided-Drawing.pdf",
+        "sha256": "eb0fb9e2c2dbf9436e11f86094195abb0a59a09a98421f31629256e8e02cf560",
+        "pages": 4
+      },
+      "notes": [],
+      "modules": [
+        {
+          "id": "a105est03-m1",
+          "number": 1,
+          "title": "Drawing conventions and projections of points and lines",
+          "pages": [
+            1
+          ],
+          "topics": [
+            "Technical drawing relevance, line types, dimensioning and BIS conventions",
+            "Projection of points in different quadrants",
+            "Straight lines inclined to one or both planes",
+            "Trace of a line",
+            "True length and true inclinations"
+          ],
+          "notes": [
+            "The introductory drawing-convention block is marked as having no end-semester questions."
+          ],
+          "component": "graphics",
+          "focus": false
+        },
+        {
+          "id": "a105est03-m2",
+          "number": 2,
+          "title": "Projections of solids",
+          "pages": [
+            1
+          ],
+          "topics": [
+            "Triangular, rectangular, square, pentagonal and hexagonal prisms and pyramids",
+            "Cone and cylinder",
+            "Simple positions including profile view",
+            "Axes inclined to one reference plane",
+            "Axes inclined to both reference planes"
+          ],
+          "notes": [],
+          "component": "graphics",
+          "focus": false
+        },
+        {
+          "id": "a105est03-m3",
+          "number": 3,
+          "title": "Sections and development of solids",
+          "pages": [
+            2
+          ],
+          "topics": [
+            "Sections of prisms, pyramids, cone and cylinder with vertical axes",
+            "Different section planes",
+            "True shape of sections",
+            "Development of solid surfaces",
+            "Development after sectioning"
+          ],
+          "notes": [
+            "Exclude problems in which true shape is given.",
+            "Exclude development problems with through holes."
+          ],
+          "component": "graphics",
+          "focus": true
+        },
+        {
+          "id": "a105est03-m4",
+          "number": 4,
+          "title": "Isometric projection and CAD",
+          "pages": [
+            2
+          ],
+          "topics": [
+            "Isometric scale",
+            "Isometric views and projections of prisms, pyramids, cone, cylinder, sphere and hemisphere",
+            "Combinations of solids",
+            "CAD introduction, role and advantages",
+            "Dimensioned two-dimensional drawings with suitable software"
+          ],
+          "notes": [
+            "CAD is marked internal evaluation only."
+          ],
+          "component": "graphics",
+          "focus": true
+        }
+      ],
+      "activities": []
+    },
+    {
+      "id": "a105est04",
+      "code": "A105EST04",
+      "title": "Introduction to Electrical and Electronics Engineering",
+      "kind": "theory",
+      "notebooks": [
+        "electrical",
+        "electronics"
+      ],
+      "source": {
+        "asset": "semester/sources/A105EST04-Introduction-to-Electrical-and-Electronics-Engineering.pdf",
+        "sha256": "93b7a25d2e3a6c1b53813005d8b3c5d1ee28d5157c74c58d49be2fce310cb7b5",
+        "pages": 5
+      },
+      "notes": [
+        "One assessed course in the supplied syllabus. Keep Electrical and Electronics as separate teacher notebooks linked to this shared course. Modules 1-2 and 3-4 provide the initial electrical/electronics mapping; teacher coverage still needs confirmation."
+      ],
+      "modules": [
+        {
+          "id": "a105est04-m1",
+          "number": 1,
+          "title": "DC circuits and magnetic circuits",
+          "pages": [
+            1
+          ],
+          "topics": [
+            "Current and voltage division",
+            "Relative potential",
+            "Capacitor and inductor V-I relations and stored energy",
+            "Ohm and Kirchhoff laws with numericals",
+            "Resistive star-delta conversion",
+            "Mesh-current analysis with matrix equations",
+            "Node-voltage analysis with matrix equations",
+            "MMF, field strength, flux density and reluctance",
+            "Comparison of electrical and magnetic circuits",
+            "Series and parallel magnetic circuits with composite materials"
+          ],
+          "notes": [
+            "Star-delta derivation is not required.",
+            "Magnetic-circuit numerical problems are not required."
+          ],
+          "component": "electrical",
+          "focus": true
+        },
+        {
+          "id": "a105est04-m2",
+          "number": 2,
+          "title": "Electromagnetic induction and AC circuits",
+          "pages": [
+            1,
+            2
+          ],
+          "topics": [
+            "Faraday and Lenz laws",
+            "Static and dynamic induced EMF",
+            "Self and mutual inductance and coefficient of coupling",
+            "Sinusoidal generation, frequency and period",
+            "Average/RMS values and form factor",
+            "Phasors and trigonometric/rectangular/polar/complex representations",
+            "Pure R, L and C circuits",
+            "Reactance and impedance",
+            "Series RL, RC and RLC",
+            "Power factor and active/reactive/apparent power",
+            "Three-phase generation and advantages",
+            "Balanced star and delta connections and line/phase relations"
+          ],
+          "notes": [
+            "Induction/inductance numericals are marked not required.",
+            "AC waveform, impedance and three-phase sections include numerical problems."
+          ],
+          "component": "electrical",
+          "focus": true
+        },
+        {
+          "id": "a105est04-m3",
+          "number": 3,
+          "title": "Electronic devices and circuits",
+          "pages": [
+            2
+          ],
+          "topics": [
+            "Passive and active electronic components",
+            "PN-junction diode and V-I characteristics",
+            "Zener/avalanche breakdown and Zener regulation",
+            "DC power-supply block diagram",
+            "Half-wave, full-wave and bridge rectifiers",
+            "Ripple factor with and without capacitor filters",
+            "BJT construction, operation and characteristics",
+            "CE input/output characteristics and comparison of CE/CB/CC",
+            "Biasing and load line",
+            "Transistor switching and amplification",
+            "RC-coupled amplifier and frequency response",
+            "FET introduction and N-/P-channel MOSFETs"
+          ],
+          "notes": [],
+          "component": "electronics",
+          "focus": true
+        },
+        {
+          "id": "a105est04-m4",
+          "number": 4,
+          "title": "Communication, instrumentation and electronics applications",
+          "pages": [
+            2
+          ],
+          "topics": [
+            "Communication-system block diagram",
+            "Fibre-optic communication block diagram",
+            "AM and FM concepts",
+            "AM/FM superheterodyne receivers",
+            "Wired and wireless communication",
+            "GSM block diagram",
+            "Comparison of 3G, 4G, 5G and 6G",
+            "Electronic instrumentation system",
+            "Digital multimeter and function generator",
+            "CRO and Lissajous patterns",
+            "IoT smart-home, healthcare and agriculture case studies"
+          ],
+          "notes": [
+            "AM/FM derivations are not required.",
+            "IoT applications are case studies only."
+          ],
+          "component": "electronics",
+          "focus": true
+        }
+      ],
+      "activities": []
+    },
+    {
+      "id": "a105est05",
+      "code": "A105EST05",
+      "title": "Algorithmic Thinking with Python",
+      "kind": "theory_with_practical_components",
+      "notebooks": [
+        "python"
+      ],
+      "source": {
+        "asset": "semester/sources/A105EST05-Algorithmic-Thinking-with-Python.pdf",
+        "sha256": "abc171066584a372aaa1a717de5826ad5f4a1d11bd9aee89969829c7bf73fc3e",
+        "pages": 7
+      },
+      "notes": [
+        "The header calls this Theory, but teaching hours, internal assessment and later pages explicitly include programming/lab components. Preserve both rather than discarding the practical work.",
+        "Includes 12 sample classroom exercises and 18 lab exercise entries, not the student's current assignment sheet or exam portion.",
+        "Source exercise 6 prints an ambiguous temperature-conversion expression; authored teaching material must use C/5=(F-32)/9. The collinearity exercise also needs vertical-line-safe handling. Do not silently treat source wording as verified worked solutions."
+      ],
+      "modules": [
+        {
+          "id": "a105est05-m1",
+          "number": 1,
+          "title": "Problem solving and Python essentials",
+          "pages": [
+            1
+          ],
+          "topics": [
+            "Trial and error",
+            "Heuristics",
+            "Means-ends analysis",
+            "Backtracking and working backward",
+            "Computer as a model of computation",
+            "Understanding and modelling a problem",
+            "Algorithm development, programming, testing and evaluation",
+            "Python variables",
+            "Numeric and string types",
+            "math module",
+            "print and input",
+            "Operators and precedence"
+          ],
+          "notes": [],
+          "component": "python",
+          "focus": false
+        },
+        {
+          "id": "a105est05-m2",
+          "number": 2,
+          "title": "Pseudocode and flowcharts",
+          "pages": [
+            2
+          ],
+          "topics": [
+            "Meaning and purpose of pseudocode",
+            "Sequencing",
+            "Selection with if-else and case",
+            "Repetition with for, while and repeat-until",
+            "Flowchart symbols and connectors",
+            "Tracing sample algorithms"
+          ],
+          "notes": [
+            "Flowcharts are for visualizing control flow; RAPTOR is suggested.",
+            "Sample problems include arithmetic expressions, simple interest, comparisons, grade selection, descending sequences, sums, factorial and largest values."
+          ],
+          "component": "python",
+          "focus": false
+        },
+        {
+          "id": "a105est05-m3",
+          "number": 3,
+          "title": "Python control flow, sequences, functions and recursion",
+          "pages": [
+            2,
+            3
+          ],
+          "topics": [
+            "if-else and elif",
+            "for, range and while",
+            "Lists, tuples, sets, strings and dictionaries",
+            "NumPy arrays",
+            "Problem decomposition",
+            "Modularization and functions",
+            "Multiple return values",
+            "Recursion and the call stack",
+            "Avoiding circular recursion",
+            "Recursive Fibonacci, GCD, factorial, addition and digit sums"
+          ],
+          "notes": [
+            "Merge sort and returning the top three integers are named decomposition/modularization examples."
+          ],
+          "component": "python",
+          "focus": true
+        },
+        {
+          "id": "a105est05-m4",
+          "number": 4,
+          "title": "Computational problem-solving approaches",
+          "pages": [
+            3
+          ],
+          "topics": [
+            "Brute force with padlock/password examples",
+            "Divide and conquer with merge sort",
+            "Dynamic programming with Fibonacci",
+            "Recursion versus dynamic programming",
+            "Greedy task-selection example",
+            "Greedy characteristics and comparison with dynamic programming",
+            "Randomized coupon-collection example",
+            "Randomized hat-return example"
+          ],
+          "notes": [
+            "Introductory diagrammatic/algorithmic explanations only; analysis is not required."
+          ],
+          "component": "python",
+          "focus": true
+        }
+      ],
+      "activities": []
+    },
+    {
+      "id": "a105esl07",
+      "code": "A105ESL07",
+      "title": "Basic Electrical and Electronics Engineering Workshop",
+      "kind": "workshop",
+      "notebooks": [
+        "workshop"
+      ],
+      "source": {
+        "asset": "semester/sources/A105ESL07-Basic-Electrical-and-Electronics-Engineering-Workshop.pdf",
+        "sha256": "ff2e778fc49d5e9dfc6bc92962628b9d16c23c2ac5de45ed1638727a7521d53b",
+        "pages": 5
+      },
+      "notes": [
+        "Separate practical course. ESE is conducted internally; do not treat it as the same written exam as the theory course.",
+        "Eight electrical and nine electronics experiment entries. Minimum seven experiments from each specialization; actual class selection and completion are unknown.",
+        "Certified laboratory record is a submission prerequisite for the examination. The detailed continuous-assessment discussion does not visibly allocate all 45 continuous-assessment marks; preserve the top-level table and flag local rubric details for teacher confirmation."
+      ],
+      "modules": [],
+      "activities": [
+        {
+          "id": "electrical",
+          "listedCount": 8,
+          "minimumCount": 7,
+          "sourcePages": [
+            1
+          ]
+        },
+        {
+          "id": "electronics",
+          "listedCount": 9,
+          "minimumCount": 7,
+          "sourcePages": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a105hwt06",
+      "code": "A105HWT06",
+      "title": "Life Skills and Professional Communication",
+      "kind": "activity_based",
+      "notebooks": [
+        "life"
+      ],
+      "source": {
+        "asset": "semester/sources/A105HWT06-Life-Skills-and-Professional-Communication-1.pdf",
+        "sha256": "f277106d7e47fc1a0592a979f366742d270809251e8ff635227ffb8cabf537cf",
+        "pages": 7
+      },
+      "notes": [
+        "Activity-based course with no ESE shown. Track reports, presentations, group/individual deliverables and portfolio/journal rather than inventing theory-exam revision modules.",
+        "Portfolio and journal are mandatory requirements. Week numbers are relative course weeks, not calendar deadlines; semester start and current completion are unknown."
+      ],
+      "modules": [],
+      "activities": [
+        {
+          "title": "Group formation, planning and Gantt chart",
+          "sourcePages": [
+            2
+          ]
+        },
+        {
+          "title": "Self-awareness, role-storming, skills identification and mind map",
+          "sourcePages": [
+            2
+          ]
+        },
+        {
+          "title": "Empathy presentation",
+          "sourcePages": [
+            3
+          ]
+        },
+        {
+          "title": "Professional networking, workplace discussion/report, role-play and undergraduate action plan",
+          "sourcePages": [
+            3
+          ]
+        },
+        {
+          "title": "Technical problem selection, resource summary, six-hat exercise and report",
+          "sourcePages": [
+            4
+          ]
+        },
+        {
+          "title": "LinkedIn profile, resume and self-introduction video",
+          "sourcePages": [
+            4
+          ]
+        },
+        {
+          "title": "Emotional intelligence, diversity, interview and listening activities",
+          "sourcePages": [
+            4
+          ]
+        },
+        {
+          "title": "English vocabulary/usage, reflection and collaboration presentation",
+          "sourcePages": [
+            4
+          ]
+        },
+        {
+          "title": "Technology podcast/video and linked profile evidence",
+          "sourcePages": [
+            5
+          ]
+        },
+        {
+          "title": "Practical engineering activities and language lab",
+          "sourcePages": [
+            5
+          ]
+        }
+      ]
+    }
+  ]
+}

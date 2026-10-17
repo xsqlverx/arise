@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.Flow
 interface SubjectDao {
     @Query("SELECT * FROM subjects ORDER BY orderIndex ASC")
     fun getAllSubjects(): Flow<List<SubjectEntity>>
+    @Query("SELECT * FROM subjects ORDER BY orderIndex ASC")
+    suspend fun getNow(): List<SubjectEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(subject: SubjectEntity)
@@ -43,6 +45,8 @@ interface ClassTipDao {
     suspend fun togglePin(id: String)
     @Query("SELECT * FROM class_tips ORDER BY pinned DESC, createdAt DESC")
     fun getAllTips(): Flow<List<ClassTipEntity>>
+    @Query("SELECT * FROM class_tips ORDER BY pinned DESC, createdAt DESC")
+    suspend fun getNow(): List<ClassTipEntity>
 
     @Query("SELECT * FROM class_tips WHERE subjectId = :subjectId ORDER BY pinned DESC, createdAt DESC")
     fun getTipsBySubject(subjectId: String): Flow<List<ClassTipEntity>>
@@ -70,6 +74,8 @@ interface ClassTipDao {
 interface StudySessionDao {
     @Query("SELECT * FROM study_sessions ORDER BY timestamp DESC")
     fun getAllSessions(): Flow<List<StudySessionEntity>>
+    @Query("SELECT * FROM study_sessions ORDER BY timestamp DESC")
+    suspend fun getNow(): List<StudySessionEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(session: StudySessionEntity)
@@ -111,4 +117,20 @@ interface AcademicTaskDao {
 
     @Query("UPDATE academic_tasks SET completed = :completed WHERE id = :id")
     suspend fun setCompleted(id: String, completed: Boolean)
+}
+
+@Dao
+interface CurriculumDao {
+    @Query("SELECT * FROM semester WHERE id = 1")
+    fun observeSemester(): Flow<com.example.data.model.SemesterEntity?>
+    @Query("SELECT * FROM semester WHERE id = 1")
+    suspend fun semesterNow(): com.example.data.model.SemesterEntity?
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun saveSemester(row: com.example.data.model.SemesterEntity)
+    @Query("SELECT * FROM curriculum_attempts ORDER BY timestamp DESC")
+    fun observeAttempts(): Flow<List<com.example.data.model.CurriculumAttemptEntity>>
+    @Query("SELECT * FROM curriculum_attempts ORDER BY timestamp DESC")
+    suspend fun attemptsNow(): List<com.example.data.model.CurriculumAttemptEntity>
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertAttempt(row: com.example.data.model.CurriculumAttemptEntity)
 }

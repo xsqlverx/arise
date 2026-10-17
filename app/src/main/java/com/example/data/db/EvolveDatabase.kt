@@ -5,6 +5,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
+import com.example.data.model.SemesterEntity
+import com.example.data.model.CurriculumAttemptEntity
 import com.example.data.model.AcademicTaskEntity
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.data.model.ClassTipEntity
@@ -19,9 +21,11 @@ import kotlinx.coroutines.CoroutineScope
         ClassTipEntity::class,
         StudySessionEntity::class,
         UserProfileEntity::class,
-        AcademicTaskEntity::class
+        AcademicTaskEntity::class,
+        SemesterEntity::class,
+        CurriculumAttemptEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class EvolveDatabase : RoomDatabase() {
@@ -30,6 +34,7 @@ abstract class EvolveDatabase : RoomDatabase() {
     abstract fun studySessionDao(): StudySessionDao
     abstract fun userProfileDao(): UserProfileDao
     abstract fun taskDao(): AcademicTaskDao
+    abstract fun curriculumDao(): CurriculumDao
 
     companion object {
         @Volatile
@@ -42,11 +47,18 @@ abstract class EvolveDatabase : RoomDatabase() {
                     EvolveDatabase::class.java,
                     "evolve_academic.db"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                 INSTANCE = instance
                 instance
             }
+        }
+    }
+
+    private object MIGRATION_2_3 : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS semester (id INTEGER NOT NULL PRIMARY KEY, packJson TEXT NOT NULL, focusJson TEXT NOT NULL, electricalMarks INTEGER NOT NULL, electronicsMarks INTEGER NOT NULL)")
+            db.execSQL("CREATE TABLE IF NOT EXISTS curriculum_attempts (id TEXT NOT NULL PRIMARY KEY, moduleId TEXT NOT NULL, answersJson TEXT NOT NULL, recall TEXT NOT NULL, score INTEGER NOT NULL, total INTEGER NOT NULL, timestamp INTEGER NOT NULL, reviewDate TEXT NOT NULL)")
         }
     }
 

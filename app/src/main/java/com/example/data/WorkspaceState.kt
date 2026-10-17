@@ -17,6 +17,7 @@ class WorkspaceState(context: Context) {
         check(editor.commit()) { "Unable to preserve workspace state" }
     }
     fun focusActive(): Boolean {
+        if ((read("curriculum-focus")?.optLong("until") ?: 0) > System.currentTimeMillis()) return true
         val state = read("study") ?: return false
         return state.optBoolean("running") && remaining(state, bootCount) > 0
     }

@@ -21,12 +21,12 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
-fun PlanScreen(userProfile: UserProfileEntity, tasks: List<AcademicTaskEntity>, activeDate: LocalDate, now: LocalDateTime,
+fun PlanScreen(nextAction: com.example.domain.NextAction, onOpenAction: () -> Unit, onOpenSemester: () -> Unit, userProfile: UserProfileEntity, tasks: List<AcademicTaskEntity>, activeDate: LocalDate, now: LocalDateTime,
     onSelectDate: (LocalDate) -> Unit, onRescheduleClick: () -> Unit,
     onOpenBriefClick: (String) -> Unit, onOpenStudyClick: () -> Unit,
     onTaskClick: (String) -> Unit, onEditTask: (String) -> Unit, onAddTask: () -> Unit,
     onSettingsClick: () -> Unit) {
-    val action = PlannerEngine.determineNextAction(userProfile, tasks)
+    val action = nextAction
     val slot = PlannerEngine.plannedSlot(userProfile, action, now)
     val today = now.toLocalDate()
     Column(Modifier.fillMaxSize().background(EvolveBlack).padding(horizontal = 24.dp).verticalScroll(rememberScrollState())) {
@@ -69,14 +69,7 @@ fun PlanScreen(userProfile: UserProfileEntity, tasks: List<AcademicTaskEntity>, 
                     Text(entry.title, color = EvolveText, fontFamily = SpaceGroteskFontFamily, fontSize = 17.sp)
                     Spacer(Modifier.height(5.dp))
                     Text(entry.copy, color = EvolveMuted, fontSize = 12.sp, lineHeight = 19.sp)
-                    if (entry.action) TextButton(onClick = {
-                        when (action.actionType) {
-                            "brief-graphics" -> onOpenBriefClick("graphics")
-                            "brief-electrical" -> onOpenBriefClick("electrical")
-                            "task" -> onTaskClick(action.id)
-                            else -> onAddTask()
-                        }
-                    }) { Text("Open this step ↗", color = EvolveAccent) }
+                    if (entry.action) TextButton(onClick = onOpenAction) { Text("Open this step ↗", color = EvolveAccent) }
                 }
             }
         }
@@ -99,6 +92,7 @@ fun PlanScreen(userProfile: UserProfileEntity, tasks: List<AcademicTaskEntity>, 
             }
             HorizontalDivider(color = EvolveLine)
         }
+        TextButton(onClick = onOpenSemester) { Text("My semester · choose a syllabus topic ↗", color = EvolveAccent) }
         Spacer(Modifier.height(28.dp)); EvolveAction("Add a study task  +", onAddTask)
         Spacer(Modifier.height(16.dp))
         TextButton(onClick = onOpenStudyClick) { Text("Explore the sample Python lesson ↗", color = EvolveMuted) }

@@ -71,3 +71,26 @@ data class AcademicTaskEntity(
     val completed: Boolean = false,
     val createdAt: Long = System.currentTimeMillis()
 )
+
+/** One accepted, versioned semester map. Personal notes remain separate. */
+@Entity(tableName = "semester")
+data class SemesterEntity(
+    @PrimaryKey val id: Int = 1,
+    val packJson: String,
+    val focusJson: String,
+    val electricalMarks: Int = 20,
+    val electronicsMarks: Int = 20
+)
+
+/** A small authored checkpoint, never a claim that a whole module is mastered. */
+@Entity(tableName = "curriculum_attempts")
+data class CurriculumAttemptEntity(
+    @PrimaryKey val id: String,
+    val moduleId: String,
+    val answersJson: String,
+    val recall: String,
+    val score: Int,
+    val total: Int,
+    val timestamp: Long,
+    val reviewDate: String
+)

@@ -36,9 +36,9 @@ annotation class ColumnInfo(val defaultValue: String)
 '@ | Set-Content -LiteralPath (Join-Path $checkRoot 'RoomAnnotations.kt') -Encoding utf8
 # Only Room metadata annotations are stand-ins; planner, quiz, models and codec are the actual source.
 $testClasspath = "$stdlib;$junit;$hamcrest;$json;$annotations"
-java -Xmx384m -cp $compilerClasspath org.jetbrains.kotlin.cli.jvm.K2JVMCompiler -no-stdlib -no-reflect -classpath $testClasspath -jvm-target 11 -d .local-checks/domain .local-checks/RoomAnnotations.kt app/src/main/java/com/example/data/model/Entities.kt app/src/main/java/com/example/domain/PlannerEngine.kt app/src/main/java/com/example/domain/QuizAttempt.kt app/src/main/java/com/example/data/repository/BackupCodec.kt app/src/test/java/com/example/DomainRegressionTest.kt app/src/test/java/com/example/BackupCodecTest.kt
+java -Xmx384m -cp $compilerClasspath org.jetbrains.kotlin.cli.jvm.K2JVMCompiler -no-stdlib -no-reflect -classpath $testClasspath -jvm-target 11 -d .local-checks/domain .local-checks/RoomAnnotations.kt app/src/main/java/com/example/data/model/Entities.kt app/src/main/java/com/example/domain/PlannerEngine.kt app/src/main/java/com/example/domain/QuizAttempt.kt app/src/main/java/com/example/domain/Curriculum.kt app/src/main/java/com/example/domain/StarterLessons.kt app/src/main/java/com/example/data/repository/BackupCodec.kt app/src/test/java/com/example/DomainRegressionTest.kt app/src/test/java/com/example/BackupCodecTest.kt app/src/test/java/com/example/CurriculumTest.kt
 if ($LASTEXITCODE -ne 0) { throw 'JVM domain compilation failed' }
-java -Xmx128m -cp ".local-checks/domain;$testClasspath" org.junit.runner.JUnitCore com.example.DomainRegressionTest com.example.BackupCodecTest
+java -Xmx128m -cp ".local-checks/domain;$testClasspath" org.junit.runner.JUnitCore com.example.DomainRegressionTest com.example.BackupCodecTest com.example.CurriculumTest
 if ($LASTEXITCODE -ne 0) { throw 'Domain tests failed' }
 python -X utf8 tools/check_migration.py
 if ($LASTEXITCODE -ne 0) { throw 'SQLite migration check failed' }
