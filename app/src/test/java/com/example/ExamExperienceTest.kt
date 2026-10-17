@@ -1,9 +1,13 @@
 package com.example
 
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.graphics.asAndroidBitmap
+import android.graphics.Bitmap
+import android.os.Handler
+import android.os.Looper
+import android.view.PixelCopy
+import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import com.example.data.model.*
 import com.example.domain.*
 import com.example.ui.components.LocalReduceMotion
@@ -16,6 +20,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
@@ -26,7 +31,7 @@ import java.time.LocalDateTime
 @Config(sdk = [34], qualifiers = "w390dp-h844dp")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class ExamExperienceTest {
-    @get:Rule val compose = createComposeRule()
+    @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
     private val assets = listOf(File("app/src/main/assets"),File("src/main/assets")).first { it.isDirectory }
     private val json = File(assets,"semester/s1.json").readText()
     private val pack = CurriculumCodec.decode(json)
@@ -35,7 +40,16 @@ class ExamExperienceTest {
 
     private fun screenshot(name: String) {
         val directory = File("build/reports/ui").apply { mkdirs() }
-        val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
+        compose.waitForIdle()
+        val window = compose.activity.window
+        val bitmap = Bitmap.createBitmap(window.decorView.width,window.decorView.height,Bitmap.Config.ARGB_8888)
+        var result = -1
+        // Compose 1.7's captureToImage waits for a hardware frame callback absent on Robolectric.
+        // Use its synchronous PixelCopy shadow directly after the Compose tree is idle.
+        // https://github.com/robolectric/robolectric/issues/8071
+        compose.runOnIdle { PixelCopy.request(window,bitmap,{ result = it },Handler(Looper.getMainLooper())) }
+        shadowOf(Looper.getMainLooper()).idle()
+        assertEquals(PixelCopy.SUCCESS,result)
         File(directory,"$name.png").outputStream().use {
             assertTrue(bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it))
         }
@@ -67,9 +81,9 @@ class ExamExperienceTest {
         compose.onNodeWithText(course.title).performScrollTo().performClick()
         compose.onNodeWithText(pack.modules.first { it.id == "a105mat01-m3" }.title).performScrollTo().performClick()
         compose.onNodeWithText("Gradient").performScrollTo().performClick()
-        compose.onNodeWithText("1 topics selected").assertExists()
+        compose.onNodeWithText("1 topic selected").assertExists()
         screenshot("exam-topic-selection")
-        compose.onNodeWithText("Save 1 topics").performClick()
+        compose.onNodeWithText("Save exam").performClick()
         assertEquals(mapOf("a105mat01-m3" to setOf("Gradient")),saved!!.topics)
         assertFalse(saved!!.confirmed)
     }
@@ -83,7 +97,7 @@ class ExamExperienceTest {
         compose.onNodeWithText("Clear selection").performScrollTo().performClick()
         compose.onNodeWithTag("exam-custom-topic").performScrollTo().performTextInput("Teacher worksheet 7")
         compose.onNodeWithText("+ Add topic").performScrollTo().performClick()
-        compose.onNodeWithText("Save 1 topics").performClick()
+        compose.onNodeWithText("Save exam").performClick()
         assertTrue(saved!!.topics.isEmpty())
         assertEquals("Teacher worksheet 7",saved!!.extras.single().title)
         assertEquals(pack.courses.first().notebooks.first(),saved!!.extras.single().subjectId)

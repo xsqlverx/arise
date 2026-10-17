@@ -19,7 +19,7 @@ import java.util.UUID
 
 data class CheckpointDraft(val moduleId: String, val id: String = UUID.randomUUID().toString(),
     val step: Int = 0, val recall: String = "", val choices: List<Int> = emptyList(),
-    val selected: Int = -1, val checked: Boolean = false)
+    val selected: Int = -1, val checked: Boolean = false, val page: Int = 0)
 data class SyllabusPage(val source: CourseSource, val page: Int)
 
 class CurriculumViewModel(application: Application) : AndroidViewModel(application) {
@@ -140,7 +140,7 @@ class CurriculumViewModel(application: Application) : AndroidViewModel(applicati
             val state = withContext(Dispatchers.IO) { workspace.read("checkpoint-$id") }
             val loaded = runCatching { state?.let { s ->
                 val choices = s.getJSONArray("choices").let { a -> (0 until a.length()).map { a.getInt(it) } }
-                CheckpointDraft(id, s.getString("id"), s.getInt("step"), s.getString("recall"), choices, s.getInt("selected"), s.getBoolean("checked"))
+                CheckpointDraft(id, s.getString("id"), s.getInt("step"), s.getString("recall"), choices, s.getInt("selected"), s.getBoolean("checked"), s.optInt("page",0))
             }?.also { validateDraft(it) } }.getOrNull() ?: CheckpointDraft(id)
             val resumed = if (review && loaded.step == 2) CheckpointDraft(id) else loaded
             _draft.value = resumed; latestDrafts[id] = resumed; saveDraft(resumed); focus(resumed.step != 2)
@@ -148,7 +148,7 @@ class CurriculumViewModel(application: Application) : AndroidViewModel(applicati
     }
     private fun validateDraft(d: CheckpointDraft) {
         val lesson = StarterLessons.forModule(d.moduleId)!!
-        require(d.step in 0..2 && d.choices.size <= lesson.checks.size && d.id.isNotBlank())
+        require(d.step in 0..2 && d.page in 0..3 && d.choices.size <= lesson.checks.size && d.id.isNotBlank())
         require(d.choices.indices.all { d.choices[it] in lesson.checks[it].options.indices })
         require(d.step != 1 || d.choices.size < lesson.checks.size)
         require(d.step != 2 || d.choices.size == lesson.checks.size)
@@ -168,6 +168,7 @@ class CurriculumViewModel(application: Application) : AndroidViewModel(applicati
         withContext(Dispatchers.IO) { workspace.write("checkpoint-${d.moduleId}", JSONObject().apply {
             put("id", d.id); put("step", d.step); put("recall", d.recall); put("choices", JSONArray(d.choices))
             put("selected", d.selected); put("checked", d.checked)
+            put("page",d.page)
         }) }
     }
     private fun change(transform: (CheckpointDraft) -> CheckpointDraft) {
@@ -179,6 +180,7 @@ class CurriculumViewModel(application: Application) : AndroidViewModel(applicati
         } }
     }
     fun recall(text: String) { if (text.length <= 30000) change { if (it.step == 0) it.copy(recall = text) else it } }
+    fun lessonPage(page: Int) { if (page in 0..3) change { if (it.step == 0) it.copy(page = page) else it } }
     fun beginCheck() = change { if (it.step == 0) it.copy(step = 1) else it }
     fun select(index: Int) = change { if (it.step == 1 && !it.checked) it.copy(selected = index) else it }
     fun checkAnswer() = change { if (it.step == 1 && it.selected >= 0) it.copy(checked = true) else it }

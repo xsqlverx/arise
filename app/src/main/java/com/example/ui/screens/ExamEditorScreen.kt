@@ -95,7 +95,7 @@ fun ExamEditorScreen(semester: AcceptedSemester, initialDate: String, busy: Bool
                     Spacer(Modifier.height(20.dp))
                     Text("The date can stay unknown. Choose the portion next.", color = EvolveMuted, fontSize = 13.sp, lineHeight = 21.sp)
                 } else {
-                    Text("$count topics selected", color = EvolveAccent, fontSize = 14.sp)
+                    Text("$count ${if (count == 1) "topic" else "topics"} selected", color = EvolveAccent, fontSize = 14.sp)
                     TextButton(onClick = { setTopics(emptyMap(),emptyList()) }, enabled = !busy && count > 0) {
                         Text("Clear selection", color = EvolveMuted, fontSize = 12.sp)
                     }
@@ -176,7 +176,7 @@ fun ExamEditorScreen(semester: AcceptedSemester, initialDate: String, busy: Bool
         feedback?.let { Text(it, color = EvolveWarm, fontSize = 13.sp, modifier = Modifier.padding(vertical = 8.dp)) }
         if (step == 1 && customText.isNotBlank()) Text("Add or clear the extra topic before saving.", color = EvolveWarm, fontSize = 12.sp)
         if (step == 1 && !validMarks) Text("Marks must be whole numbers from 0 to 100.", color = EvolveWarm, fontSize = 12.sp)
-        EvolveAction(if (busy) "Saving…" else if (step == 0) "Choose topics →" else "Save $count topics", {
+        EvolveAction(if (busy) "Saving…" else if (step == 0) "Choose topics →" else "Save exam", {
             if (step == 0) step = 1 else onSave(ExamPortion(name.trim(),confirmed,selected,extras),date,ee,ec)
         }, enabled = !busy && name.isNotBlank() && validDate && (step == 0 || (count > 0 && validMarks && customText.isBlank())))
         Spacer(Modifier.height(16.dp))

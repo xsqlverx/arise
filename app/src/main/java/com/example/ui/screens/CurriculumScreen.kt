@@ -165,12 +165,12 @@ private fun LessonScreen(pack: SemesterPack, d: CheckpointDraft, result: com.exa
     val lesson = StarterLessons.forModule(m.id)!!
     val reduced = LocalReduceMotion.current
     val scroll = rememberScrollState()
-    var page by rememberSaveable(d.id) { mutableIntStateOf(0) }
+    val page = d.page
     val ime = WindowInsets.ime.getBottom(androidx.compose.ui.platform.LocalDensity.current) > 0
-    BackHandler(enabled = !ime && d.step == 0 && page > 0) { page-- }
+    BackHandler(enabled = !ime && d.step == 0 && page > 0) { vm.lessonPage(page-1) }
     LaunchedEffect(d.moduleId,d.step,d.choices.size,page) { scroll.scrollTo(0) }
     Column(Modifier.fillMaxSize().background(EvolveBlack).imePadding().verticalScroll(scroll).padding(horizontal = 24.dp)) {
-        TextButton(onClick = { if (d.step == 0 && page > 0) page-- else vm.back() },enabled = !busy) { Text("← Back",color = EvolveMuted) }
+        TextButton(onClick = { if (d.step == 0 && page > 0) vm.lessonPage(page-1) else vm.back() },enabled = !busy) { Text("← Back",color = EvolveMuted) }
         Spacer(Modifier.height(18.dp)); Eyebrow("${c.code} · M${m.number} · One concept",true)
         Spacer(Modifier.height(14.dp)); Text(lesson.title,color = EvolveText,fontFamily = SpaceGroteskFontFamily,fontSize = 34.sp,lineHeight = 40.sp)
         feedback?.let { Spacer(Modifier.height(12.dp)); Text(it,color = EvolveWarm) }
@@ -179,7 +179,7 @@ private fun LessonScreen(pack: SemesterPack, d: CheckpointDraft, result: com.exa
                 Spacer(Modifier.height(24.dp))
                 Row(Modifier.fillMaxWidth(),horizontalArrangement = Arrangement.SpaceBetween) {
                     listOf("Start","Learn","Example","Recall").forEachIndexed { index,label ->
-                        TextButton(onClick = { page = index },enabled = !busy,modifier = Modifier.weight(1f),contentPadding = PaddingValues(horizontal = 4.dp)) {
+                        TextButton(onClick = { vm.lessonPage(index) },enabled = !busy,modifier = Modifier.weight(1f),contentPadding = PaddingValues(horizontal = 4.dp)) {
                             Text(label,color = if (page == index) EvolveAccent else EvolveDim,fontSize = 11.sp)
                         }
                     }
@@ -206,7 +206,7 @@ private fun LessonScreen(pack: SemesterPack, d: CheckpointDraft, result: com.exa
                         }
                         Spacer(Modifier.height(28.dp))
                         EvolveAction(if (active == 3) "Try the two checks →" else "Continue →",{
-                            if (active == 3) vm.beginCheck() else page = active + 1
+                            if (active == 3) vm.beginCheck() else vm.lessonPage(active + 1)
                         },enabled = !busy)
                     }
                 }
