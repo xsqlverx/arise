@@ -1,0 +1,45 @@
+name: Android compile and regression checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check project completeness and feature contracts
+        run: python3 tools/check-project.py
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '9.3.1'
+      - name: Install the declared Android platform
+        run: sdkmanager 'platforms;android-36.1' 'build-tools;36.0.0'
+      - name: Prepare a disposable CI-only debug key
+        run: >-
+          keytool -genkeypair -noprompt -keystore debug.keystore
+          -alias androiddebugkey -storepass android -keypass android
+          -keyalg RSA -validity 2 -dname 'CN=Evolve Compile Check'
+      - name: Build the Android APK and run unit tests
+        run: >-
+          gradle --no-daemon --console=plain --max-workers=2
+          :app:assembleDebug :app:testDebugUnitTest
+          --stacktrace
+      - name: Check upgrade SQL
+        run: python3 tools/check_migration.py

@@ -67,4 +67,39 @@ class DomainRegressionTest {
         assertNull(PlannerEngine.calculateDaysToExam(""))
         assertNull(PlannerEngine.calculateDaysToExam("invalid"))
     }
+    @Test fun earlierDeadlineWinsEvenWhenTheTaskListIsNotSorted() {
+        val later = AcademicTaskEntity("later", "python", "Later", "Open worksheet", "2026-11-05")
+        val earlier = later.copy(id="earlier", dueDate="2026-11-01")
+        assertEquals("earlier", PlannerEngine.determineNextAction(profile, listOf(later,earlier)).id)
+    }
+    @Test fun expiredExamStaysInThePast() {
+        assertEquals(-1L,PlannerEngine.calculateDaysToExam(LocalDate.now().minusDays(1).toString()))
+    }
+    @Test fun aBlockEndingAtGymStartFitsButCrossingItDoesNot() {
+        assertFalse(PlannerEngine.isProtected(profile,LocalTime.of(19,30),30))
+        assertTrue(PlannerEngine.isProtected(profile,LocalTime.of(19,30),31))
+    }
+    @Test fun crossingTheCallOrMidnightIsProtected() {
+        assertTrue(PlannerEngine.isProtected(profile,LocalTime.of(22,15),30))
+        assertTrue(PlannerEngine.isProtected(profile,LocalTime.of(23,50),25))
+    }
+    @Test fun aPastSavedSlotCannotRemainThePlannedSlot() {
+        val p=profile.copy(scheduledDate="2026-10-29",scheduledSlot="16:00")
+        val slot=PlannerEngine.plannedSlot(p,PlannerEngine.determineNextAction(p),now)
+        assertNotNull(slot)
+        assertTrue(LocalDate.parse(slot!!.date).atTime(LocalTime.parse(slot.time24)) > now)
+    }
+    @Test fun noSavedOrSuggestedSlotIsCreatedWhenTheWholeWindowIsProtected() {
+        val p=profile.copy(studyStart="20:00",studyEnd="21:00",scheduledDate="2026-10-30",scheduledSlot="20:15")
+        assertNull(PlannerEngine.plannedSlot(p,PlannerEngine.determineNextAction(p),now))
+    }
+    @Test fun invalidDurationsCannotCreateCandidates() {
+        assertTrue(PlannerEngine.getAvailableSlots(profile,now,durationMinutes=0).isEmpty())
+        assertTrue(PlannerEngine.getAvailableSlots(profile,now,durationMinutes=181).isEmpty())
+    }
+    @Test fun anEmptyQuizCannotRecordACheckedAnswer() {
+        val q=QuizAttempt("empty",emptyList()).select(1).check().advance()
+        assertFalse(q.complete)
+        assertTrue(q.answers.isEmpty())
+    }
 }

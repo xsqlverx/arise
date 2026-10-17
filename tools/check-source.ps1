@@ -2,6 +2,8 @@ param([string]$CompilerVersion = '2.1.20')
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
 Set-Location -LiteralPath $repoRoot
+python -X utf8 tools/check-project.py
+if ($LASTEXITCODE -ne 0) { throw 'Project contracts failed' }
 $checkRoot = Join-Path $repoRoot '.local-checks'
 New-Item -ItemType Directory -Force -Path $checkRoot | Out-Null
 $artifactCache = Join-Path $env:USERPROFILE '.gradle/caches/modules-2/files-2.1'
