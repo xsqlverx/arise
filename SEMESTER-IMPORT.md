@@ -1,6 +1,6 @@
 # Evolve 1.2 — semester to first study session
 
-Build from the latest `main` in Google AI Studio. Keep the existing application ID and AI Studio signing configuration. This update is versionCode 3, versionName 1.2; it should update the existing application when signed with the same key. Do not regenerate the app from a design prompt.
+Build from the latest `main` in Google AI Studio. Keep the existing application ID and AI Studio signing configuration. This update is versionCode 5, versionName 1.3; it should update the existing application when signed with the same key. Do not regenerate the app from a design prompt.
 
 ## Start using it
 
@@ -17,9 +17,9 @@ The import maps seven courses and twenty theory modules. Separate Electrical/Ele
 - Twelve original starter lessons and 24 short questions across the default focus: Maths M3–4, Chemistry M3–4, Graphics M3–4, Python M3–4, Electrical M1–2 and Electronics M3–4. Each lesson explicitly names its limited coverage and gives a further practice task. Online concept references are optional; lesson text, questions and source PDFs work offline.
 - Recommendations share one domain function across Today, Plan, rescheduling and reminders. Dated urgent tasks/missing briefs take priority; undated missing briefs do not gate semester study. Requested independent practice precedes new starter lessons. Otherwise due starter reviews and untried concepts are considered, with recent activity used to rotate courses.
 - A wrong/partial starter check returns for review the next day; a fully correct check after three days. These are simple scheduling intervals, not a validated mastery model. Repeats use the same questions and are labeled accordingly.
-- Room v3 adds the semester and checkpoint attempts using an explicit 2→3 migration. The existing 1→2 migration remains available. No destructive migration is used. Import does not replace existing notes, tasks or profile settings.
+- Room v3 added the semester and checkpoint attempts. Room v4 adds a saved next-exam portion with an explicit 3→4 migration; 1→2 and 2→3 remain available. No destructive migration is used. Import does not replace existing notes, tasks or profile settings.
 - Stable checkpoint attempt IDs, guarded choices, exact recall text and serialized draft writes. A completed result is acknowledged after the database write; interrupted final saves can retry with the same ID.
-- Backup v3 includes the course map, selected scope, component marks and committed checkpoint responses/results. Export takes a database transaction snapshot. Readers still accept v1/v2 backups. Drafts are interruption state on the current device, not committed backup records. The original PDFs travel with the APK, rather than being duplicated in every JSON backup.
+- Backup v4 includes the course map, selected scope, component marks and committed checkpoint responses/results. Export takes a database transaction snapshot. Readers still accept v1/v2/v3 backups. Drafts are interruption state on the current device, not committed backup records. The original PDFs travel with the APK, rather than being duplicated in every JSON backup.
 
 ## Boundaries
 
@@ -40,5 +40,9 @@ Before declaring the APK ready, build in AI Studio and test on a physical device
 - Try wrong and correct answers; taps cannot change a checked answer. Complete the last check and tap repeatedly; there should be one attempt. Relaunch and verify the saved result and review date. Retake creates a new attempt, clearly using repeated questions.
 - Start independent practice and verify it opens the saved task with its timer; it can be edited, completed and reopened. Test a syllabus topic without a starter lesson too.
 - Open each source PDF offline, visit first/last/mapped pages, rapidly change pages and scroll in both directions. Inspect text legibility and memory behavior on the phone.
-- Export v3 and merge it back; verify exact recall/notes, scope, split, tasks and attempts. Old v1/v2 backups remain readable and do not erase an installed semester. Invalid input is rejected before writing.
+- Export v4 and merge it back; verify exact recall/notes, scope, split, tasks and attempts. Old v1/v2/v3 backups remain readable and do not erase an installed semester. Invalid input is rejected before writing.
 - Check real IME placement, text scaling, scrolling, transitions, PDF rendering and reminders on Android. Those require native evidence.
+
+## Next exam in 1.3
+
+From Today, tap **Next exam / Set your exam topics**, or use **Next exam · edit topics** in Plan. Choose the name/date (unknown date is allowed), then select whole modules or individual topics. Clear the estimated selection to start fresh. Add teacher topics under their subject when absent from the syllabus. Mark the portion confirmed only when the teacher has confirmed it. EE/EC marks remain editable under a collapsed section. Saving updates the shared recommendation and clears a previously chosen reminder block. Backup v4 includes this portion; older backups restore their original module focus without fabricating a confirmed portion.

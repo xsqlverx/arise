@@ -48,3 +48,10 @@ jobs:
         run: python3 tools/check_migration.py
       - name: Verify packaged assets and summarize test results
         run: python3 tools/check-apk.py
+      - name: Keep Compose screen captures for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evolve-compose-screens
+          path: app/build/reports/ui/*.png
+          if-no-files-found: ignore

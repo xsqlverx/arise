@@ -57,7 +57,6 @@ import com.example.data.model.UserProfileEntity
 import com.example.domain.PlannerEngine
 import com.example.domain.NextAction
 import com.example.ui.components.EvolveField
-import com.example.ui.components.EvolveSheet
 import com.example.domain.RescheduleSlot
 import com.example.ui.theme.EvolveAccent
 import com.example.ui.theme.EvolveBlack
@@ -79,21 +78,11 @@ fun WhyFirstSheet(
     onClose: () -> Unit
 ) {
     BaseSheet(title = "Why this first?", onClose = onClose) {
-        Text(
-            text = action.copy,
-            fontFamily = ManropeFontFamily,
-            fontSize = 12.sp,
-            lineHeight = 18.sp,
-            color = EvolveMuted
-        )
-
-        Spacer(modifier = Modifier.height(18.dp))
-
         ReasonStep(number = "01", title = "The deciding factor", desc = action.copy)
         Spacer(modifier = Modifier.height(14.dp))
         ReasonStep(number = "02", title = "How to begin", desc = action.firstStep)
         Spacer(modifier = Modifier.height(14.dp))
-        ReasonStep(number = "03", title = "A bounded step", desc = "${action.duration}. The recommendation uses your entered work; unknown scope and coverage remain unknown.")
+        ReasonStep(number = "03", title = "Time to set aside", desc = action.duration)
 
         Spacer(modifier = Modifier.height(24.dp))
 

@@ -47,6 +47,20 @@ class EvolveRepository(private val db: EvolveDatabase) {
         com.example.domain.CurriculumCodec.accepted(row)
         db.curriculumDao().saveSemester(row)
     }
+    suspend fun saveExam(portion: com.example.domain.ExamPortion, date: String, ee: Int, ec: Int) {
+        require(date.isEmpty() || PlannerEngine.date(date) != null)
+        db.withTransaction {
+            val current = db.curriculumDao().semesterNow() ?: error("Import your semester first")
+            val updated = current.copy(focusJson = JSONArray(portion.topics.keys.sorted()).toString(),
+                examJson = portion.encode(), electricalMarks = ee, electronicsMarks = ec)
+            com.example.domain.CurriculumCodec.accepted(updated)
+            val profile = (db.userProfileDao().getNow() ?: UserProfileEntity()).copy(examDate = date,
+                scheduledDate = "") // A changed portion needs a fresh block, not a stale reminder.
+            require(PlannerEngine.validateProfile(profile) == null)
+            db.curriculumDao().saveSemester(updated)
+            db.userProfileDao().insertOrUpdate(profile)
+        }
+    }
     suspend fun recordCurriculumAttempt(row: com.example.data.model.CurriculumAttemptEntity) {
         db.withTransaction {
             val semester = db.curriculumDao().semesterNow() ?: error("Import the semester first")

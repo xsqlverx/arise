@@ -79,7 +79,8 @@ data class SemesterEntity(
     val packJson: String,
     val focusJson: String,
     val electricalMarks: Int = 20,
-    val electronicsMarks: Int = 20
+    val electronicsMarks: Int = 20,
+    @ColumnInfo(defaultValue = "''") val examJson: String = ""
 )
 
 /** A small authored checkpoint, never a claim that a whole module is mastered. */

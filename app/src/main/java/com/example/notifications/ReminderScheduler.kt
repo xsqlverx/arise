@@ -81,7 +81,7 @@ object ReminderScheduler {
         fun launch(value: String, code: Int) = PendingIntent.getActivity(c, code,
             Intent(c, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP).putExtra("evolve_action", value),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val open = launch(if (action.actionType in listOf("task", "curriculum")) "${action.actionType}:${action.id}" else action.actionType, 420)
+        val open = launch(if (action.actionType in listOf("task", "curriculum", "exam-practice")) "${action.actionType}:${action.id}" else action.actionType, 420)
         val busy = PendingIntent.getBroadcast(c, 422, Intent(c, ReminderReceiver::class.java)
             .setAction("evolve.snooze").putExtra("token", token), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val notification = NotificationCompat.Builder(c, CHANNEL).setSmallIcon(R.drawable.ic_stat_evolve)

@@ -30,6 +30,11 @@ class CurriculumViewModel(application: Application) : AndroidViewModel(applicati
     private val latestDrafts = mutableMapOf<String, CheckpointDraft>()
     private val _open = MutableStateFlow(false)
     val open = _open.asStateFlow()
+    private val _examOpen = MutableStateFlow(false)
+    val examOpen = _examOpen.asStateFlow()
+    private val _examSession = MutableStateFlow(0)
+    val examSession = _examSession.asStateFlow()
+    private var examReturnToLibrary = false
     private val _draft = MutableStateFlow<CheckpointDraft?>(null)
     val draft = _draft.asStateFlow()
     private val _document = MutableStateFlow<SyllabusPage?>(null)
@@ -53,11 +58,18 @@ class CurriculumViewModel(application: Application) : AndroidViewModel(applicati
     }
     private fun assetJson() = getApplication<Application>().assets.open("semester/s1.json").bufferedReader(Charsets.UTF_8).use { it.readText() }
     fun show() { _open.value = true; _feedback.value = null }
-    fun close() { _document.value = null; _draft.value = null; _open.value = false; focus(false) }
+    fun editExam() {
+        _examSession.value++
+        examReturnToLibrary = _open.value
+        _draft.value = null; _document.value = null; _examOpen.value = true; show(); focus(false)
+    }
+    fun closeExam() { _examOpen.value = false; _feedback.value = null; if (!examReturnToLibrary) _open.value = false }
+    fun close() { _examOpen.value = false; _document.value = null; _draft.value = null; _open.value = false; focus(false) }
     fun back() {
         if (_busy.value) return
         when {
             _document.value != null -> _document.value = null
+            _examOpen.value -> closeExam()
             _draft.value != null -> { _draft.value = null; focus(false) }
             else -> _open.value = false
         }
@@ -88,7 +100,26 @@ class CurriculumViewModel(application: Application) : AndroidViewModel(applicati
         val current = db.curriculumDao().semesterNow() ?: return@action
         val accepted = CurriculumCodec.accepted(current)
         val next = if (enabled) accepted.focus + id else accepted.focus - id
-        repo.saveSemester(current.copy(focusJson = JSONArray(next.sorted()).toString()))
+        val exam = accepted.exam?.let { saved ->
+            val topics = saved.topics.toMutableMap()
+            if (enabled) topics[id] = accepted.pack.modules.first { it.id == id }.topics.toSet() else topics.remove(id)
+            saved.copy(topics = topics)
+        }
+        repo.saveSemester(current.copy(focusJson = JSONArray(next.sorted()).toString(), examJson = exam?.encode() ?: ""))
+    }
+    fun saveExam(portion: ExamPortion, date: String, ee: String, ec: String) {
+        val electrical = ee.toIntOrNull(); val electronics = ec.toIntOrNull()
+        if (electrical == null || electronics == null || electrical !in 0..100 || electronics !in 0..100) {
+            _feedback.value = "Use whole marks between 0 and 100."; return
+        }
+        if (date.isNotBlank() && PlannerEngine.date(date)?.let { it < java.time.LocalDate.now() } != false) {
+            _feedback.value = "Choose an upcoming date, or leave it unknown."; return
+        }
+        action {
+            repo.saveExam(portion, date, electrical, electronics)
+            closeExam()
+            _feedback.value = "Exam saved · ${portion.topicCount} topics"
+        }
     }
     fun saveMarks(ee: String, ec: String) {
         val electrical = ee.toIntOrNull(); val electronics = ec.toIntOrNull()

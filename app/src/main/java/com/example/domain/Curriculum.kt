@@ -18,7 +18,8 @@ data class SemesterPack(val id: String, val title: String, val scopeStatus: Stri
     val modules get() = courses.flatMap { it.modules }
     fun course(moduleId: String) = courses.first { c -> c.modules.any { it.id == moduleId } }
 }
-data class AcceptedSemester(val pack: SemesterPack, val focus: Set<String>, val electricalMarks: Int, val electronicsMarks: Int)
+data class AcceptedSemester(val pack: SemesterPack, val focus: Set<String>, val electricalMarks: Int,
+    val electronicsMarks: Int, val exam: ExamPortion? = null)
 
 /** Strict even for backup input. PDF assets are bundled, never arbitrary file paths/URLs. */
 object CurriculumCodec {
@@ -80,7 +81,9 @@ object CurriculumCodec {
         val pack = decode(row.packJson)
         val focus = JSONArray(row.focusJson).strings()
         require(focus.distinct().size == focus.size && focus.all { id -> pack.modules.any { it.id == id } })
-        return AcceptedSemester(pack, focus.toSet(), row.electricalMarks, row.electronicsMarks)
+        val exam = row.examJson.takeIf { it.isNotEmpty() }?.let { ExamPortion.decode(it, pack) }
+        require(exam == null || focus.toSet() == exam.topics.keys) { "Exam topics and module focus disagree" }
+        return AcceptedSemester(pack, focus.toSet(), row.electricalMarks, row.electronicsMarks, exam)
     }
     fun validateAttempt(a: CurriculumAttemptEntity, semester: AcceptedSemester) {
         require(a.id.isNotBlank() && a.id.length <= 200 && a.recall.length <= 30000 && a.timestamp >= 0)
@@ -116,7 +119,8 @@ object AcademicPlanner {
         val queued = tasks.filter { !it.completed }
         if (queued.isNotEmpty()) return PlannerEngine.determineNextAction(p.copy(graphicsBrief = "Scope pending", electricalBrief = "Scope pending"), queued)
         val latest = attempts.groupBy { it.moduleId }.mapValues { (_, rows) -> rows.maxBy { it.timestamp } }
-        val eligible = semester.pack.modules.filter { it.id in semester.focus && StarterLessons.forModule(it.id) != null }
+        val eligible = semester.pack.modules.filter { it.id in semester.focus && StarterLessons.forModule(it.id) != null &&
+            (semester.exam == null || StarterLessons.scopeTopic(it)?.let { topic -> topic in semester.exam.topics[it.id].orEmpty() } == true) }
         val candidate = eligible.filter { latest[it.id] == null || PlannerEngine.date(latest[it.id]!!.reviewDate)?.let { date -> date <= today } == true }
             .sortedWith(compareBy<CourseModule> { if (latest[it.id] != null) 0 else 1 }
                 .thenBy { module -> semester.pack.course(module.id).modules.mapNotNull { latest[it.id]?.timestamp }.maxOrNull() ?: 0L }
@@ -127,11 +131,19 @@ object AcademicPlanner {
             val reason = if (previous == null) "No starter-check evidence yet for this module."
                 else "Last starter check: ${previous.score}/${previous.total}; the ${previous.reviewDate} review is due."
             val component = if (course.id == "a105est04") " ${candidate.component.replaceFirstChar { it.uppercase() }} is retained for its separate marks." else ""
+            val scope = if (semester.exam == null) "estimated IE focus" else "saved exam portion"
             return NextAction(candidate.id, "${course.code} · M${candidate.number}", lesson.title,
-                "$reason This module is in your estimated IE focus.$component Two checks cover this concept only.",
+                "$reason This concept is in your $scope.$component Two checks cover this concept only.",
                 if (previous == null) "Start this concept" else "Review this concept", "15 min", "curriculum", 15,
-                "Take a blank page. ${lesson.firstStep}")
+                "Take a blank page. ${lesson.firstStep}", p.examDate.takeIf { PlannerEngine.date(it)?.let { day -> day >= today } == true } ?: "")
         }
+        val practice = semester.exam?.practiceTopics(semester.pack)?.firstOrNull { topic ->
+            tasks.none { it.completed && it.subjectId == topic.subjectId && it.title == "Practise: ${topic.title}" }
+        }
+        if (practice != null) return NextAction(practice.id, "Your exam portion", practice.title,
+            "You selected this topic for ${semester.exam!!.name}. Use your own class questions; starter checks do not cover every topic.",
+            "Practise this topic", "25 min", "exam-practice", 25, practice.instructions,
+            p.examDate.takeIf { PlannerEngine.date(it)?.let { day -> day >= today } == true } ?: "")
         return NextAction("semester", "Your next layer", "Go beyond the\nstarter checks.",
             "The selected starter concepts have no review due today. This does not mean the modules are exam-ready. Choose another syllabus topic and practise from your class material.",
             "Open my syllabus", "15 min", "semester", 15, "Open a module, pick an uncovered topic and add one concrete practice task. Adjust focus when your teacher confirms the portion.")

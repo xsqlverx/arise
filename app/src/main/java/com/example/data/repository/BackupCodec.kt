@@ -22,7 +22,7 @@ object BackupCodec {
         semester: SemesterEntity? = null, curriculumAttempts: List<CurriculumAttemptEntity> = emptyList()
     ): String {
         val root = JSONObject()
-        root.put("version", 3)
+        root.put("version", 4)
         root.put("exportedAt", System.currentTimeMillis())
 
         val pObj = JSONObject().apply {
@@ -98,6 +98,7 @@ object BackupCodec {
         semester?.let { row -> root.put("semester", JSONObject().apply {
             put("pack", JSONObject(row.packJson)); put("focus", JSONArray(row.focusJson))
             put("electricalMarks", row.electricalMarks); put("electronicsMarks", row.electronicsMarks)
+            if (row.examJson.isNotEmpty()) put("exam", JSONObject(row.examJson))
         }) }
         root.put("curriculumAttempts", JSONArray().apply { curriculumAttempts.forEach { a -> put(JSONObject().apply {
             put("id", a.id); put("moduleId", a.moduleId); put("answers", JSONArray(a.answersJson)); put("recall", a.recall)
@@ -109,7 +110,7 @@ object BackupCodec {
     fun decode(json: String): Backup {
         require(json.length <= 5_000_000) { "Backup is too large." }
         val root = JSONObject(json)
-        require(root.get("version").let { it is Number && it.toDouble() == it.toInt().toDouble() && it.toInt() in 1..3 }) { "Unsupported backup version." }
+        require(root.get("version").let { it is Number && it.toDouble() == it.toInt().toDouble() && it.toInt() in 1..4 }) { "Unsupported backup version." }
         fun JSONObject.text(key: String, fallback: String? = null): String {
             if (!has(key) && fallback != null) return fallback
             require(get(key) is String) { "Invalid $key" }
@@ -157,7 +158,8 @@ object BackupCodec {
         require(tasks.all { it.subjectId in subjectIds && it.title.isNotBlank() && it.durationMinutes in 5..120 && (it.dueDate.isBlank() || PlannerEngine.date(it.dueDate) != null) })
         val semester = if (root.has("semester")) root.getJSONObject("semester").let { row ->
             SemesterEntity(packJson = row.getJSONObject("pack").toString(), focusJson = row.getJSONArray("focus").toString(),
-                electricalMarks = row.number("electricalMarks", 20).toInt(), electronicsMarks = row.number("electronicsMarks", 20).toInt())
+                electricalMarks = row.number("electricalMarks", 20).toInt(), electronicsMarks = row.number("electronicsMarks", 20).toInt(),
+                examJson = if (root.getInt("version") >= 4 && row.has("exam")) row.getJSONObject("exam").toString() else "")
         } else null
         val accepted = semester?.let { com.example.domain.CurriculumCodec.accepted(it) }
         val attempts = if (root.getInt("version") >= 3) rows("curriculumAttempts") { a ->

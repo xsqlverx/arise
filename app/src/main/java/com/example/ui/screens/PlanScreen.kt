@@ -21,7 +21,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
-fun PlanScreen(nextAction: com.example.domain.NextAction, onOpenAction: () -> Unit, onOpenSemester: () -> Unit, userProfile: UserProfileEntity, tasks: List<AcademicTaskEntity>, activeDate: LocalDate, now: LocalDateTime,
+fun PlanScreen(nextAction: com.example.domain.NextAction, onOpenAction: () -> Unit, onOpenSemester: () -> Unit, onOpenExam: () -> Unit, userProfile: UserProfileEntity, tasks: List<AcademicTaskEntity>, activeDate: LocalDate, now: LocalDateTime,
     onSelectDate: (LocalDate) -> Unit, onRescheduleClick: () -> Unit,
     onOpenBriefClick: (String) -> Unit, onOpenStudyClick: () -> Unit,
     onTaskClick: (String) -> Unit, onEditTask: (String) -> Unit, onAddTask: () -> Unit,
@@ -58,7 +58,7 @@ fun PlanScreen(nextAction: com.example.domain.NextAction, onOpenAction: () -> Un
             Entry(userProfile.gymStart, "Gym", "Until ${PlannerEngine.formatTime12h(userProfile.gymEnd)} · protected", true),
             Entry(userProfile.callStart, "Evening call", "Protected for the rest of the evening", true))
         if (slot?.date == activeDate.toString() && action.actionType != "add-task")
-            entries.add(Entry(slot.time24, action.title.replace("\n", " "), "${action.minutes} min · ${action.copy}", false, true))
+            entries.add(Entry(slot.time24, action.title.replace("\n", " "), "${action.minutes} min", false, true))
         entries.sortedBy { PlannerEngine.time(it.time) ?: LocalTime.MAX }.forEach { entry ->
             Row(Modifier.fillMaxWidth().padding(bottom = 22.dp)) {
                 Text(entry.time, Modifier.width(54.dp), color = EvolveDim, fontFamily = SpaceGroteskFontFamily, fontSize = 12.sp)
@@ -92,11 +92,11 @@ fun PlanScreen(nextAction: com.example.domain.NextAction, onOpenAction: () -> Un
             }
             HorizontalDivider(color = EvolveLine)
         }
-        TextButton(onClick = onOpenSemester) { Text("My semester · choose a syllabus topic ↗", color = EvolveAccent) }
+        TextButton(onClick = onOpenExam) { Text("Next exam · edit topics ↗", color = EvolveAccent) }
+        TextButton(onClick = onOpenSemester) { Text("Syllabus library ↗", color = EvolveMuted) }
         Spacer(Modifier.height(28.dp)); EvolveAction("Add a study task  +", onAddTask)
         Spacer(Modifier.height(16.dp))
         TextButton(onClick = onOpenStudyClick) { Text("Explore the sample Python lesson ↗", color = EvolveMuted) }
-        Text("One next block is suggested at a time. Other tasks stay in your queue; sample lessons do not become personal exam progress.", color = EvolveDim, fontSize = 11.sp, lineHeight = 18.sp)
         Spacer(Modifier.height(120.dp))
     }
 }

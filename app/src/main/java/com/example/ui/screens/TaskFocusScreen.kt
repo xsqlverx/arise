@@ -7,7 +7,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
@@ -49,14 +50,19 @@ fun TaskFocusScreen(task: AcademicTaskEntity, tips: List<ClassTipEntity>, second
         Eyebrow("Start here", true)
         Spacer(Modifier.height(12.dp))
         Text(task.instructions, color = EvolveText, fontFamily = ManropeFontFamily, fontSize = 15.sp, lineHeight = 25.sp)
-        tips.filter { it.pinned && !it.isSample }.take(3).forEach {
-            Spacer(Modifier.height(24.dp)); Eyebrow("From your class notebook")
-            Spacer(Modifier.height(8.dp)); Text(it.text, color = EvolveMuted, fontSize = 14.sp, lineHeight = 23.sp)
+        val pinned = tips.filter { it.pinned && !it.isSample }.take(3)
+        if (pinned.isNotEmpty()) {
+            var notesOpen by rememberSaveable(task.id) { mutableStateOf(false) }
+            Spacer(Modifier.height(20.dp))
+            EvolveDisclosure("From your class notebook",notesOpen,{ notesOpen = !notesOpen }) {
+                pinned.forEach { Text(it.text,color = EvolveMuted,fontSize = 14.sp,lineHeight = 23.sp); Spacer(Modifier.height(12.dp)) }
+            }
         }
         Spacer(Modifier.height(32.dp))
         Text("Before you finish: close the source and explain what you did, or check your working against it.",
             color = EvolveMuted, fontSize = 13.sp, lineHeight = 21.sp)
         Spacer(Modifier.height(18.dp))
+        if (task.completed) { SavedMark(); Spacer(Modifier.height(12.dp)) }
         EvolveAction(if (task.completed) "Reopen this step" else "I completed this step  ↗", onComplete)
         Spacer(Modifier.height(12.dp))
         Text("Self-reported activity. The timer does not award mastery.", color = EvolveDim, fontSize = 11.sp)

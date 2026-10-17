@@ -483,11 +483,11 @@ class EvolveViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun addCurriculumPractice(subject: String, title: String, instructions: String, onSaved: (String) -> Unit) = updateRecords {
+    fun addCurriculumPractice(subject: String, title: String, instructions: String, dueDate: String = "", onSaved: (String) -> Unit) = updateRecords {
         val id = "practice-${UUID.randomUUID()}"
         require(subjects.value.any { it.id == subject })
-        repository.saveTask(AcademicTaskEntity(id,subject,title,instructions))
-        showToast("Practice saved in Plan. Start with your own class question; edit the step when you have it.")
+        repository.saveTask(AcademicTaskEntity(id,subject,title,instructions,dueDate = dueDate))
+        showToast("Practice ready · saved in Plan")
         onSaved(id)
     }
 

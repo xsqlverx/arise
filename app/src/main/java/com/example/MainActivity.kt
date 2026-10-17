@@ -180,6 +180,10 @@ fun EvolveApp(
     val semester by curriculum.semester.collectAsStateWithLifecycle()
     val curriculumAttempts by curriculum.attempts.collectAsStateWithLifecycle()
     val curriculumOpen by curriculum.open.collectAsStateWithLifecycle()
+    val curriculumFeedback by curriculum.feedback.collectAsStateWithLifecycle()
+    LaunchedEffect(curriculumOpen,curriculumFeedback) {
+        if (!curriculumOpen) curriculumFeedback?.let { viewModel.showToast(it) }
+    }
     val nextAction = AcademicPlanner.next(userProfile, tasks, semester, curriculumAttempts, now.toLocalDate())
     fun openSemester() {
         viewModel.exitStudyFlow()
@@ -198,6 +202,12 @@ fun EvolveApp(
     fun openAction(type: String, id: String = nextAction.id) {
         when (type) {
             "semester" -> openSemester()
+            "exam-practice" -> semester?.exam?.practiceTopics(semester!!.pack)?.find { it.id == id }?.let { topic ->
+                viewModel.addCurriculumPractice(topic.subjectId,"Practise: ${topic.title}",topic.instructions,
+                    dueDate = userProfile.examDate.takeIf { PlannerEngine.date(it)?.let { day -> day >= now.toLocalDate() } == true } ?: "") { taskId ->
+                    curriculum.close(); viewModel.openTaskFlow(taskId)
+                }
+            }
             "curriculum" -> { openSemester(); curriculum.startModule(id, review = true) }
             "brief-graphics" -> viewModel.openSheet(ActiveSheet.BriefCapture("graphics"))
             "brief-electrical" -> viewModel.openSheet(ActiveSheet.BriefCapture("electrical"))
@@ -210,7 +220,8 @@ fun EvolveApp(
     LaunchedEffect(now.toLocalDate()) { if (selectedDate < now.toLocalDate()) viewModel.setActiveDate(now.toLocalDate()) }
     LaunchedEffect(incomingAction, ready) {
         if (incomingAction != null && ready) {
-            if (incomingAction.startsWith("curriculum:")) openAction("curriculum", incomingAction.removePrefix("curriculum:"))
+            if (incomingAction.startsWith("exam-practice:")) openAction("exam-practice", incomingAction.removePrefix("exam-practice:"))
+            else if (incomingAction.startsWith("curriculum:")) openAction("curriculum", incomingAction.removePrefix("curriculum:"))
             else if (incomingAction.startsWith("task:")) openAction("task", incomingAction.removePrefix("task:"))
             else openAction(incomingAction)
             onIncomingHandled()
@@ -290,7 +301,7 @@ fun EvolveApp(
             savedScreens.SaveableStateProvider(screen) {
             when {
                 screen == "loading" -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = EvolveAccent) }
-                screen == "curriculum" -> CurriculumScreen(curriculum, { curriculum.back() },
+                screen == "curriculum" -> CurriculumScreen(curriculum, userProfile.examDate, { curriculum.back() },
                     onNotebook = { id -> curriculum.back(); viewModel.openSubjectNotebook(id) },
                     onPractice = { subject, title, instructions -> viewModel.addCurriculumPractice(subject,title,instructions) { id ->
                         curriculum.close(); viewModel.openTaskFlow(id)
@@ -364,6 +375,8 @@ fun EvolveApp(
                     when (NavDestination.valueOf(screen)) {
                         NavDestination.TODAY -> {
                             TodayScreen(
+                                semester = semester,
+                                onOpenExam = { curriculum.editExam() },
                                 userProfile = userProfile,
                                 now = now,
                                 nextAction = nextAction,
@@ -379,6 +392,7 @@ fun EvolveApp(
                         }
                         NavDestination.PLAN -> {
                             PlanScreen(
+                                onOpenExam = { curriculum.editExam() },
                                 userProfile = userProfile,
                                 tasks = tasks,
                                 now = now,

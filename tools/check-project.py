@@ -11,11 +11,11 @@ KOTLIN = MAIN / 'java/com/example'
 
 required = [
     'MainActivity.kt', 'domain/PlannerEngine.kt', 'domain/QuizAttempt.kt',
-    'domain/Curriculum.kt', 'domain/StarterLessons.kt', 'data/WorkspaceState.kt',
+    'domain/Curriculum.kt', 'domain/ExamPortion.kt', 'domain/StarterLessons.kt', 'data/WorkspaceState.kt',
     'data/db/EvolveDatabase.kt', 'data/db/Daos.kt', 'data/model/Entities.kt',
     'data/repository/EvolveRepository.kt', 'data/repository/BackupCodec.kt',
     'ui/EvolveViewModel.kt', 'ui/CurriculumViewModel.kt',
-    'ui/screens/CurriculumScreen.kt', 'ui/screens/TaskFocusScreen.kt',
+    'ui/screens/CurriculumScreen.kt', 'ui/screens/ExamEditorScreen.kt', 'ui/screens/TaskFocusScreen.kt',
     'ui/components/GlassDock.kt', 'ui/components/EvolveUi.kt',
     'ui/components/TrendChart.kt', 'ui/sheets/EvolveSheet.kt',
     'notifications/ReminderScheduler.kt', 'ui/theme/Color.kt',
@@ -54,6 +54,7 @@ build = (ROOT / 'app/build.gradle.kts').read_text(encoding='utf-8')
 assert 'applicationId = "com.aistudio.evolve.acadsq"' in build
 database = (KOTLIN / 'data/db/EvolveDatabase.kt').read_text(encoding='utf-8')
 assert 'MIGRATION_1_2' in database and 'MIGRATION_2_3' in database
+assert 'MIGRATION_3_4' in database
 assert 'fallbackToDestructiveMigration' not in database
 
 pack = json.loads((MAIN / 'assets/semester/s1.json').read_text(encoding='utf-8'))

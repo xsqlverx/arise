@@ -25,7 +25,7 @@ import kotlinx.coroutines.CoroutineScope
         SemesterEntity::class,
         CurriculumAttemptEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class EvolveDatabase : RoomDatabase() {
@@ -47,11 +47,17 @@ abstract class EvolveDatabase : RoomDatabase() {
                     EvolveDatabase::class.java,
                     "evolve_academic.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .build()
                 INSTANCE = instance
                 instance
             }
+        }
+    }
+
+    private object MIGRATION_3_4 : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE semester ADD COLUMN examJson TEXT NOT NULL DEFAULT ''")
         }
     }
 

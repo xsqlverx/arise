@@ -12,6 +12,12 @@ data class StarterLesson(val title: String, val firstStep: String, val explanati
 /** Original starter examples. Each covers ONE concept, not all topics in its syllabus module.
  * References support the concepts; these are not supplied teacher questions or past papers. */
 object StarterLessons {
+    // Exact syllabus anchors: a lesson must not be recommended for a different selected topic.
+    private val scopeIndices = mapOf("a105mat01-m3" to 2, "a105mat01-m4" to 1,
+        "a105cyt02-m3" to 1, "a105cyt02-m4" to 1, "a105est03-m3" to 3,
+        "a105est03-m4" to 0, "a105est04-m1" to 3, "a105est04-m2" to 4,
+        "a105est04-m3" to 4, "a105est04-m4" to 0, "a105est05-m3" to 7, "a105est05-m4" to 2)
+    fun scopeTopic(module: CourseModule): String? = scopeIndices[module.id]?.let { module.topics.getOrNull(it) }
     private fun q(p: String, a: String, b: String, c: String, correct: Int, why: String) = StarterCheck(p, listOf(a,b,c), correct, why)
     private val lessons = mapOf(
         "a105mat01-m3" to StarterLesson("Find the direction\nof fastest increase.",

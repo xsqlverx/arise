@@ -47,13 +47,13 @@ fun EvolveAction(text: String, onClick: () -> Unit, modifier: Modifier = Modifie
 
 @Composable
 fun EvolveField(label: String, value: String, onChange: (String) -> Unit, multiline: Boolean = false,
-    hint: String = "", enabled: Boolean = true) {
+    hint: String = "", enabled: Boolean = true, modifier: Modifier = Modifier) {
     Text(label, color = EvolveMuted, fontFamily = ManropeFontFamily, fontSize = 12.sp)
     Spacer(Modifier.height(7.dp))
     BasicTextField(value, onChange, enabled = enabled, singleLine = !multiline,
         cursorBrush = SolidColor(EvolveAccent), textStyle = TextStyle(color = EvolveText,
             fontFamily = ManropeFontFamily, fontSize = 14.sp, lineHeight = 23.sp),
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(EvolveRaised)
+        modifier = modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(EvolveRaised)
             .border(1.dp, EvolveLine, RoundedCornerShape(14.dp)).padding(15.dp),
         decorationBox = { field -> Box { if (value.isEmpty()) Text(hint, color = EvolveDim, fontSize = 14.sp); field() } })
     Spacer(Modifier.height(16.dp))

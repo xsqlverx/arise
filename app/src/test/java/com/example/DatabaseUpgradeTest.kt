@@ -54,7 +54,7 @@ class DatabaseUpgradeTest {
         }
         val upgraded = EvolveDatabase.getDatabase(context,CoroutineScope(Dispatchers.IO))
         try {
-            assertEquals(3,upgraded.openHelper.writableDatabase.version)
+            assertEquals(4,upgraded.openHelper.writableDatabase.version)
             val note = upgraded.classTipDao().getById("existing-note")!!
             assertEquals(exactText,note.text)
             assertTrue(note.pinned)
@@ -73,6 +73,25 @@ class DatabaseUpgradeTest {
             assertTrue(upgraded.taskDao().getNow().isEmpty())
             assertNull(upgraded.curriculumDao().semesterNow())
             assertTrue(upgraded.curriculumDao().attemptsNow().isEmpty())
+            val repo = com.example.data.repository.EvolveRepository(upgraded)
+            val packJson = context.assets.open("semester/s1.json").bufferedReader().use { it.readText() }
+            repo.acceptSemester(packJson)
+            assertEquals("",upgraded.curriculumDao().semesterNow()!!.examJson)
+            val portion = com.example.domain.ExamPortion("Internal 2",true,mapOf("a105mat01-m3" to setOf("Gradient")))
+            repo.saveExam(portion,"2026-11-07",20,20)
+            val saved = upgraded.curriculumDao().semesterNow()!!
+            assertEquals(portion,com.example.domain.CurriculumCodec.accepted(saved).exam)
+            assertEquals("2026-11-07",upgraded.userProfileDao().getNow()!!.examDate)
+            assertTrue(upgraded.userProfileDao().getNow()!!.reducedMotion)
+            assertEquals(exactText,upgraded.classTipDao().getById("existing-note")!!.text)
+            val exported = com.example.data.repository.BackupCodec.decode(repo.exportCurrentBackup())
+            assertEquals(portion,com.example.domain.CurriculumCodec.accepted(exported.semester!!).exam)
+            try {
+                repo.saveExam(portion.copy(topics = mapOf("missing" to setOf("Unknown"))),"2026-11-09",10,30)
+                fail("Invalid portion must not change either the exam or profile")
+            } catch (_: Exception) { /* Transaction must keep both old values. */ }
+            assertEquals(saved,upgraded.curriculumDao().semesterNow())
+            assertEquals("2026-11-07",upgraded.userProfileDao().getNow()!!.examDate)
         } finally { upgraded.close() }
     }
 }

@@ -1,8 +1,8 @@
-# Evolve 1.2.1 — repair and build verification
+# Evolve 1.3 — build verification
 
-This repair retains the complete semester import, seven offline PDFs, twenty-module map, twelve starter lessons, saved recall/checkpoint evidence, reviews, independent practice, class notes, backups and Room v3 migrations. It restores the planner, actual-data chart, glass backdrop, reduced motion and native keyboard-aware sheets after the broad AI Studio rewrite. Existing note categories remain visible, including kinds saved while testing that rewrite.
+This repair retains the complete semester import, seven offline PDFs, twenty-module map, twelve starter lessons, saved recall/checkpoint evidence, reviews, independent practice, class notes, backups and Room v4 migrations. It restores the planner, actual-data chart, glass backdrop, reduced motion and native keyboard-aware sheets after the broad AI Studio rewrite. Existing note categories remain visible, including kinds saved while testing that rewrite.
 
-The application ID and AI Studio signing configuration remain unchanged. VersionCode is 4 and versionName is 1.2.1.
+The application ID and AI Studio signing configuration remain unchanged. VersionCode is 5 and versionName is 1.3. The next-exam editor saves individual syllabus topics, teacher-added topics, the exam name/date and confirmation status; see EXPERIENCE-1.3.md.
 
 ## Required checks
 
@@ -17,7 +17,7 @@ The CI build uses a disposable debug certificate only for compilation validation
 ```text
 Use the latest complete xsqlverx/arise main branch, including the repair commit, as the source of truth. Preserve all relative file paths and verify app/src/main/AndroidManifest.xml, all shared components/theme/domain files and all seven syllabus PDFs exist in the actual cloud workspace before compiling.
 
-Preserve the semester import, twenty modules, twelve starter lessons/checks, saved recall/progress, reviews, independent practice, exact class notes/drafts, native editor sheets, protected-time scheduling, factual progress chart, glass backdrop, reduced motion, reminders, transactional backups and non-destructive Room migrations. Keep applicationId com.aistudio.evolve.acadsq and the current AI Studio-managed signing credentials.
+Preserve the semester import, twenty modules, twelve starter lessons/checks, saved recall/progress, reviews, independent practice, exact class notes/drafts, native editor sheets, protected-time scheduling, factual progress chart, glass backdrop, reduced motion, next-exam topics/date, reminders, transactional backups and non-destructive Room migrations. Keep applicationId com.aistudio.evolve.acadsq and the current AI Studio-managed signing credentials.
 
 Do not replace the app with an older/simple version, remove features, fabricate sample progress or weaken tests to resolve an error. Fix the precise failing source/API/configuration instead. Keep one canonical LocalReduceMotion/LocalSheetFeedback and one set of shared widgets; do not create replacement UIWidgets copies. Gradle must remain compatible with AGP 9.1.1 (Gradle 9.3.1 minimum).
 
