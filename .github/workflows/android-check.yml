@@ -46,3 +46,5 @@ jobs:
           --stacktrace
       - name: Check upgrade SQL
         run: python3 tools/check_migration.py
+      - name: Verify packaged assets and summarize test results
+        run: python3 tools/check-apk.py
