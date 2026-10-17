@@ -105,7 +105,7 @@ class CurriculumTest {
         val attempt=attempt("a105est05-m3")
         val backup=BackupCodec.decode(BackupCodec.encode(subjects,emptyList(),emptyList(),UserProfileEntity(),emptyList(),edited,listOf(attempt)))
         val restored=backup.semester!!
-        assertTrue(JSONObject(edited.packJson).similar(JSONObject(restored.packJson)))
+        assertEquals(CurriculumCodec.decode(edited.packJson), CurriculumCodec.decode(restored.packJson))
         assertEquals(edited.copy(packJson=restored.packJson),restored)
         assertEquals(listOf(attempt),backup.curriculumAttempts)
     }

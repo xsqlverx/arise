@@ -1,7 +1,6 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,7 +16,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.EvolveAccent
 import com.example.ui.theme.EvolveBlack
-import com.example.ui.theme.EvolveViolet
 import kotlin.math.cos
 import kotlin.math.exp
 import kotlin.math.sin
@@ -33,7 +31,6 @@ fun ContourLandscape(
     modifier: Modifier = Modifier,
     height: Dp = 196.dp
 ) {
-    // Deterministic procedural contour computation cached in memory
     val ridges = remember {
         val list = mutableListOf<ContourRidge>()
         val baseWidth = 430f
@@ -55,7 +52,6 @@ fun ContourLandscape(
                 val px = 215f + (u * 0.76f + v * 0.4f) * 172f
                 val py = 187f + (v * 0.34f - u * 0.12f) * 102f - h * 139f
 
-                // Normalize to [0..1] based on 430x260
                 points.add(Offset(px / baseWidth, py / baseHeight))
             }
 
@@ -74,7 +70,6 @@ fun ContourLandscape(
             val w = size.width
             val h = size.height
 
-            // Center glow ellipse
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
@@ -98,7 +93,6 @@ fun ContourLandscape(
                 end = Offset(w * 0.85f, h)
             )
 
-            // Draw ridges
             ridges.forEach { ridge ->
                 val path = Path()
                 ridge.points.forEachIndexed { index, pt ->
@@ -108,7 +102,6 @@ fun ContourLandscape(
                 }
 
                 if (ridge.isHighlight) {
-                    // Glowing highlight ridge
                     drawPath(
                         path = path,
                         color = Color(0xFFBB95FF).copy(alpha = 0.45f),
@@ -129,7 +122,6 @@ fun ContourLandscape(
                 }
             }
 
-            // Top and bottom vignetting to blend into canvas
             drawRect(
                 brush = Brush.verticalGradient(
                     0.0f to EvolveBlack,

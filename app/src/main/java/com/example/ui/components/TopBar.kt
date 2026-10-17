@@ -23,7 +23,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,7 +43,7 @@ fun TopBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(52.dp),
+            .height(44.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -110,7 +109,7 @@ fun TopBar(
             IconButton(
                 onClick = onSettingsClick,
                 modifier = Modifier
-                    .size(48.dp)
+                    .size(38.dp)
                     .border(1.dp, EvolveLine, CircleShape)
                     .testTag("settings_button")
             ) {

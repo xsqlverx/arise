@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -32,7 +31,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -107,7 +105,6 @@ fun StudyScreen(
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
-    LaunchedEffect(studyStep, quizIndex) { scrollState.scrollTo(0) }
 
     Column(
         modifier = modifier
@@ -116,7 +113,6 @@ fun StudyScreen(
             .padding(horizontal = 24.dp)
             .verticalScroll(scrollState)
     ) {
-        // Study Header with Back Button
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -156,7 +152,6 @@ fun StudyScreen(
             )
         }
 
-        // 3-Step Progress Indicators
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -179,7 +174,6 @@ fun StudyScreen(
 
         when (studyStep) {
             0 -> {
-                // Step 0: Understand the idea & Focus Timer
                 Text(
                     text = "01 / UNDERSTAND THE IDEA",
                     fontFamily = ManropeFontFamily,
@@ -217,7 +211,6 @@ fun StudyScreen(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                // Timer Wrap
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -268,7 +261,6 @@ fun StudyScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Lesson Step 1
                 Row(modifier = Modifier.fillMaxWidth()) {
                     Text(
                         text = "01",
@@ -297,7 +289,6 @@ fun StudyScreen(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Code block with monospace typography
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -317,7 +308,6 @@ fun StudyScreen(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Lesson Step 2
                 Row(modifier = Modifier.fillMaxWidth()) {
                     Text(
                         text = "02",
@@ -346,17 +336,12 @@ fun StudyScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Inline notebook tip callout
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(10.dp))
                         .background(Color(0x0EB9A2F5))
-                        .border(
-                            1.dp,
-                            Color(0x33B9A2F5),
-                            RoundedCornerShape(10.dp)
-                        )
+                        .border(1.dp, Color(0x33B9A2F5), RoundedCornerShape(10.dp))
                         .padding(14.dp)
                 ) {
                     Column {
@@ -417,7 +402,6 @@ fun StudyScreen(
             }
 
             1 -> {
-                // Step 1: Knowledge Check Quiz
                 val currentQ = sampleQuestions[quizIndex]
 
                 Row(
@@ -471,7 +455,6 @@ fun StudyScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Options A, B, C
                 currentQ.options.forEachIndexed { idx, opt ->
                     val letter = ('A' + idx).toString()
                     val isSelected = selectedOption == idx
@@ -532,11 +515,10 @@ fun StudyScreen(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Explanation text
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 60.dp)
+                        .height(60.dp)
                 ) {
                     if (isAnswerChecked) {
                         val wasCorrect = selectedOption == currentQ.correctIndex
@@ -625,7 +607,6 @@ fun StudyScreen(
             }
 
             2 -> {
-                // Step 2: Session Complete Results Orbit
                 val score = quizAnswers.count { it }
 
                 Text(
@@ -638,7 +619,6 @@ fun StudyScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Orbital score graphic
                 Box(
                     modifier = Modifier
                         .size(174.dp)

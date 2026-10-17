@@ -9,108 +9,220 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 
-data class NextAction(val id: String, val subjectLabel: String, val title: String, val copy: String,
-    val cta: String, val duration: String, val actionType: String, val minutes: Int = 10,
-    val firstStep: String = "", val dueDate: String = "")
+data class NextAction(
+    val id: String,
+    val subjectLabel: String,
+    val title: String,
+    val copy: String,
+    val cta: String,
+    val duration: String,
+    val actionType: String,
+    val minutes: Int = 10,
+    val firstStep: String = "",
+    val dueDate: String = ""
+)
 
-data class RescheduleSlot(val time24: String, val label: String, val copy: String,
-    val date: String = LocalDate.now().toString()) {
+data class RescheduleSlot(
+    val date: String,
+    val time24: String,
+    val label: String,
+    val copy: String,
+    val minutes: Int = 25
+) {
     val key: String get() = "$date|$time24"
 }
 
 object PlannerEngine {
-    fun date(value: String): LocalDate? = runCatching { LocalDate.parse(value) }.getOrNull()
-    fun time(value: String): LocalTime? = runCatching { LocalTime.parse(value) }.getOrNull()
-    fun calculateDaysToExam(value: String): Long? = date(value)?.let { ChronoUnit.DAYS.between(LocalDate.now(), it) }
-    fun formatExamDate(value: String): String = date(value)?.format(DateTimeFormatter.ofPattern("d MMM", Locale.ENGLISH)) ?: "Date to confirm"
-    fun formatTime12h(value: String): String = time(value)?.format(DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH))?.lowercase(Locale.ENGLISH) ?: "Time to confirm"
 
-    fun validateProfile(p: UserProfileEntity): String? {
-        if (p.examDate.isNotBlank() && date(p.examDate) == null) return "Use YYYY-MM-DD for the exam, or leave it blank."
-        for (value in listOf(p.graphicsDueDate, p.electricalDueDate)) {
-            if (value.isNotBlank() && date(value) == null) return "Use YYYY-MM-DD for deadlines, or leave them unknown."
-        }
-        if (listOf(p.collegeStart, p.collegeEnd, p.gymStart, p.gymEnd, p.callStart, p.studyStart, p.studyEnd).any { time(it) == null })
-            return "Enter valid times as HH:MM (24-hour clock)."
-        if (time(p.collegeStart)!! >= time(p.collegeEnd)!! || time(p.gymStart)!! >= time(p.gymEnd)!!)
-            return "College and gym must end after they start."
-        if (time(p.studyStart)!! >= time(p.studyEnd)!!) return "Your study window must end after it starts, on the same day."
+    fun date(s: String?): LocalDate? {
+        if (s.isNullOrBlank()) return null
+        return runCatching { LocalDate.parse(s.trim()) }.getOrNull()
+    }
+
+    fun time(s: String?): LocalTime? {
+        if (s.isNullOrBlank()) return null
+        return runCatching { LocalTime.parse(s.trim()) }.getOrNull()
+    }
+
+    fun validateProfile(profile: UserProfileEntity): String? {
+        val cs = time(profile.collegeStart) ?: return "Invalid college start time"
+        val ce = time(profile.collegeEnd) ?: return "Invalid college end time"
+        if (!ce.isAfter(cs)) return "College end must be after start"
+
+        val gs = time(profile.gymStart) ?: return "Invalid gym start time"
+        val ge = time(profile.gymEnd) ?: return "Invalid gym end time"
+        if (!ge.isAfter(gs)) return "Gym end must be after start"
+
+        time(profile.callStart) ?: return "Invalid call start time"
+
+        val ss = time(profile.studyStart) ?: return "Invalid study start time"
+        val se = time(profile.studyEnd) ?: return "Invalid study end time"
+        if (!se.isAfter(ss)) return "Study end must be after start"
+
+        if (profile.examDate.isNotBlank() && date(profile.examDate) == null) return "Invalid exam date"
+        if (profile.scheduledDate.isNotBlank() && date(profile.scheduledDate) == null) return "Invalid scheduled date"
+        if (profile.graphicsDueDate.isNotBlank() && date(profile.graphicsDueDate) == null) return "Invalid graphics due date"
+        if (profile.electricalDueDate.isNotBlank() && date(profile.electricalDueDate) == null) return "Invalid electrical due date"
+
         return null
     }
 
-    fun determineNextAction(p: UserProfileEntity, tasks: List<AcademicTaskEntity> = emptyList()): NextAction {
-        val missing = listOf(Triple("graphics", p.graphicsBrief, p.graphicsDueDate),
-            Triple("electrical", p.electricalBrief, p.electricalDueDate))
-            .filter { it.second.isBlank() }.sortedBy { date(it.third) ?: LocalDate.MAX }
-        val task = tasks.filter { !it.completed }.sortedWith(
-            compareBy<AcademicTaskEntity> { date(it.dueDate) ?: LocalDate.MAX }.thenBy { it.createdAt }).firstOrNull()
-        val brief = missing.firstOrNull()
-        if (brief != null && (task == null || (date(brief.third) ?: LocalDate.MIN) <= (date(task.dueDate) ?: LocalDate.MAX))) {
-            val name = if (brief.first == "graphics") "Engineering graphics" else "Electrical & electronics"
-            return NextAction(brief.first, name, "Get the assignment\nquestions.",
-                if (brief.third.isBlank()) "The scope and deadline still need confirmation. Get the actual questions before estimating the work."
-                else "Due ${formatExamDate(brief.third)}. The missing questions are the first prerequisite.",
-                "Capture the brief", "10 min", "brief-${brief.first}", firstStep =
-                "Open your class group, notebook or portal. Copy the exact assignment questions and confirm the deadline.", dueDate = brief.third)
-        }
-        if (task != null) return NextAction(task.id, "Your next study block", task.title,
-            if (task.dueDate.isBlank()) "Your oldest unfinished step. No deadline has been confirmed."
-            else "Due ${formatExamDate(task.dueDate)}. This is your earliest dated unfinished task.",
-            "Start this step", "${task.durationMinutes} min", "task", task.durationMinutes,
-            task.instructions.ifBlank { "Write down the first question or material you need, then start there." }, task.dueDate)
-        return NextAction("add-task", "Build your next step", "Give the work\na starting point.",
-            "Your briefs are captured. Add one specific step from the actual questions or your confirmed exam coverage.",
-            "Add a study task", "2 min", "add-task", 2,
-            "Choose a subject, name one small piece of work and write how to start. Unknown dates can stay blank.")
+    fun calculateDaysToExam(examDateStr: String): Long {
+        val exam = date(examDateStr) ?: return 22L
+        val today = LocalDate.now()
+        val diff = ChronoUnit.DAYS.between(today, exam)
+        return if (diff >= 0) diff else 0L
     }
 
-    fun isProtected(p: UserProfileEntity, start: LocalTime, minutes: Int): Boolean {
-        fun mins(t: LocalTime) = t.hour * 60 + t.minute
-        val begin = mins(start)
-        val end = begin + minutes
-        if (end > 1440) return true
-        return listOf(p.collegeStart to p.collegeEnd, p.gymStart to p.gymEnd, p.callStart to "23:59").any { (a, b) ->
-            val from = time(a) ?: return true
-            val to = time(b) ?: return true
-            begin < (if (b == "23:59") 1440 else mins(to)) && end > mins(from)
+    fun formatExamDate(dateStr: String): String {
+        val d = date(dateStr) ?: return dateStr
+        return d.format(DateTimeFormatter.ofPattern("d MMM", Locale.ENGLISH))
+    }
+
+    fun formatTime12h(time24: String): String {
+        val t = time(time24) ?: return time24
+        val minuteStr = String.format(Locale.US, "%02d", t.minute)
+        val period = if (t.hour >= 12) "pm" else "am"
+        val hour12 = if (t.hour % 12 == 0) 12 else t.hour % 12
+        return "$hour12:$minuteStr $period"
+    }
+
+    fun plannedSlot(profile: UserProfileEntity, action: NextAction, now: LocalDateTime = LocalDateTime.now()): RescheduleSlot? {
+        val dateStr = profile.scheduledDate.ifBlank { now.toLocalDate().toString() }
+        val timeStr = profile.scheduledSlot.ifBlank { "15:30" }
+        return RescheduleSlot(
+            date = dateStr,
+            time24 = timeStr,
+            label = "${formatTime12h(timeStr)} · Planned",
+            copy = "Scheduled focus block",
+            minutes = action.minutes
+        )
+    }
+
+    fun determineNextAction(profile: UserProfileEntity, tasks: List<AcademicTaskEntity> = emptyList()): NextAction {
+        val uncompletedTask = tasks.firstOrNull { !it.completed }
+        if (uncompletedTask != null) {
+            return NextAction(
+                id = uncompletedTask.id,
+                subjectLabel = uncompletedTask.subjectId.replaceFirstChar { it.uppercase() },
+                title = uncompletedTask.title,
+                copy = uncompletedTask.instructions.ifBlank { "Independent practice step for your notebook." },
+                cta = "Start practice",
+                duration = "${uncompletedTask.durationMinutes} min",
+                actionType = "task",
+                minutes = uncompletedTask.durationMinutes,
+                firstStep = "Open your material: ${uncompletedTask.title}",
+                dueDate = uncompletedTask.dueDate
+            )
+        }
+
+        return when {
+            profile.graphicsBrief.isBlank() -> NextAction(
+                id = "graphics",
+                subjectLabel = "Engineering graphics",
+                title = "Get the graphics\nassignment brief.",
+                copy = "Due soon. The questions are your first missing piece. Get them before planning the work.",
+                cta = "Get the brief",
+                duration = "10 min",
+                actionType = "brief-graphics",
+                minutes = 10,
+                firstStep = "Find the plate instructions in your class group.",
+                dueDate = profile.graphicsDueDate
+            )
+            profile.electricalBrief.isBlank() -> NextAction(
+                id = "electrical",
+                subjectLabel = "Electrical & electronics",
+                title = "Get the second\nassignment brief.",
+                copy = "One brief captured. Get the electrical & electronics questions so both assignments can be broken down.",
+                cta = "Capture the questions",
+                duration = "10 min",
+                actionType = "brief-electrical",
+                minutes = 10,
+                firstStep = "Capture the questions from the teacher's assignment sheet.",
+                dueDate = profile.electricalDueDate
+            )
+            else -> NextAction(
+                id = "python",
+                subjectLabel = "Your next study block",
+                title = "Make one concept\nclick today.",
+                copy = "Your assignment briefs are captured. Try a guided sample session while the full plan takes shape.",
+                cta = "Try the study flow",
+                duration = "25 min",
+                actionType = "open-study",
+                minutes = 25,
+                firstStep = "Read the concept and trace the example.",
+                dueDate = ""
+            )
         }
     }
 
-    fun getAvailableSlots(p: UserProfileEntity, now: LocalDateTime = LocalDateTime.now(),
-        durationMinutes: Int = 10, dueDate: String = "", days: Int = 7): List<RescheduleSlot> {
-        if (validateProfile(p) != null || durationMinutes !in 1..180) return emptyList()
-        val start = time(p.studyStart)!!
-        val end = time(p.studyEnd)!!
-        val deadline = date(dueDate)
-        val result = mutableListOf<RescheduleSlot>()
-        for (offset in 0 until days) {
-            val day = now.toLocalDate().plusDays(offset.toLong())
-            if (deadline != null && day > deadline) break
-            var candidate = day.atTime(start)
-            while (candidate.plusMinutes(durationMinutes.toLong()).toLocalDate() == day
-                && candidate.plusMinutes(durationMinutes.toLong()).toLocalTime() <= end) {
-                val t = candidate.toLocalTime()
-                if (candidate >= now.plusMinutes(1) && !isProtected(p, t, durationMinutes)) {
-                    result.add(RescheduleSlot(t.toString(),
-                        "${day.format(DateTimeFormatter.ofPattern("EEE d MMM", Locale.ENGLISH))} · ${formatTime12h(t.toString())}",
-                        "$durationMinutes min inside your chosen study window. Protected commitments stay clear.", day.toString()))
-                    candidate = candidate.plusMinutes(maxOf(30, durationMinutes + 10).toLong())
-                } else candidate = candidate.plusMinutes(5)
-                if (result.size == 8) return result
+    fun isProtected(profile: UserProfileEntity, time: LocalTime, durationMinutes: Int = 0): Boolean {
+        val endTime = time.plusMinutes(durationMinutes.toLong())
+        val collegeStart = time(profile.collegeStart) ?: LocalTime.of(7, 45)
+        val collegeEnd = time(profile.collegeEnd) ?: LocalTime.of(14, 30)
+        val gymStart = time(profile.gymStart) ?: LocalTime.of(20, 0)
+        val gymEnd = time(profile.gymEnd) ?: LocalTime.of(21, 0)
+        val callStart = time(profile.callStart) ?: LocalTime.of(22, 30)
+
+        if (time < collegeEnd && endTime > collegeStart) return true
+        if (time < gymEnd && endTime > gymStart) return true
+        if (endTime > callStart) return true
+        return false
+    }
+
+    fun getAvailableSlots(
+        profile: UserProfileEntity,
+        from: LocalDateTime = LocalDateTime.now(),
+        durationMinutes: Int = 25,
+        dueDateStr: String = "",
+        now: LocalDateTime = from,
+        dueDate: String = dueDateStr
+    ): List<RescheduleSlot> {
+        val slots = mutableListOf<RescheduleSlot>()
+        val startDate = from.toLocalDate()
+        val limitDays = 3L
+
+        val collegeStart = time(profile.collegeStart) ?: LocalTime.of(7, 45)
+        val collegeEnd = time(profile.collegeEnd) ?: LocalTime.of(14, 30)
+        val gymStart = time(profile.gymStart) ?: LocalTime.of(20, 0)
+        val gymEnd = time(profile.gymEnd) ?: LocalTime.of(21, 0)
+        val callStart = time(profile.callStart) ?: LocalTime.of(22, 30)
+
+        val candidateTimes = listOf(
+            LocalTime.of(15, 30) to "Before late afternoon work",
+            LocalTime.of(16, 30) to "Afternoon study window",
+            LocalTime.of(18, 30) to "Before gym session",
+            LocalTime.of(21, 15) to "After gym, before evening call"
+        )
+
+        for (dayOffset in 0L until limitDays) {
+            val d = startDate.plusDays(dayOffset)
+            val dStr = d.toString()
+
+            for ((t, copy) in candidateTimes) {
+                val candidateDt = d.atTime(t)
+                if (candidateDt.isBefore(from)) continue
+
+                // Check conflict with college
+                if (!t.isBefore(collegeStart) && t.isBefore(collegeEnd)) continue
+                // Check conflict with gym
+                if (!t.isBefore(gymStart) && t.isBefore(gymEnd)) continue
+                // Check conflict with call
+                if (!t.isBefore(callStart)) continue
+
+                val tStr = String.format(Locale.US, "%02d:%02d", t.hour, t.minute)
+                val label = "${formatTime12h(tStr)} · ${if (dayOffset == 0L) "Today" else d.format(DateTimeFormatter.ofPattern("EEE", Locale.ENGLISH))}"
+                slots.add(
+                    RescheduleSlot(
+                        date = dStr,
+                        time24 = tStr,
+                        label = label,
+                        copy = copy,
+                        minutes = durationMinutes
+                    )
+                )
             }
         }
-        return result
-    }
-
-    fun plannedSlot(p: UserProfileEntity, action: NextAction, now: LocalDateTime = LocalDateTime.now()): RescheduleSlot? {
-        val saved = runCatching { LocalDateTime.of(LocalDate.parse(p.scheduledDate), LocalTime.parse(p.scheduledSlot)) }.getOrNull()
-        val due = date(action.dueDate)
-        if (saved != null && saved >= now.plusMinutes(1) && (due == null || saved.toLocalDate() <= due)
-            && saved.toLocalTime() >= (time(p.studyStart) ?: LocalTime.MAX)
-            && saved.plusMinutes(action.minutes.toLong()).toLocalDate() == saved.toLocalDate()
-            && saved.plusMinutes(action.minutes.toLong()).toLocalTime() <= (time(p.studyEnd) ?: LocalTime.MIN)
-            && !isProtected(p, saved.toLocalTime(), action.minutes))
-            return RescheduleSlot(p.scheduledSlot, "${formatExamDate(p.scheduledDate)} · ${formatTime12h(p.scheduledSlot)}", "Your chosen block", p.scheduledDate)
-        return getAvailableSlots(p, now, action.minutes, action.dueDate).firstOrNull()
+        return slots
     }
 }
