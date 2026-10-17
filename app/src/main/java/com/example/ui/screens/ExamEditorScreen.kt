@@ -16,6 +16,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.domain.*
@@ -101,7 +104,8 @@ fun ExamEditorScreen(semester: AcceptedSemester, initialDate: String, busy: Bool
                     }
                     Spacer(Modifier.height(16.dp))
                     EvolveField("Find a subject or topic", query, { query = it }, hint = "Gradient, Python…", enabled = !busy)
-                    if (semester.exam == null) Text("Your current module focus is preselected. Adjust it to the teacher's portion.", color = EvolveMuted, fontSize = 12.sp, lineHeight = 19.sp)
+                    Text(if (semester.exam == null) "Estimated modules are preselected. Untick a module or expand it to choose topics." else
+                        "Tick a module for all topics, or expand it to choose.", color = EvolveMuted, fontSize = 12.sp, lineHeight = 19.sp)
                     val courses = semester.pack.courses.filter { c -> c.modules.isNotEmpty() && (query.isBlank() ||
                         (listOf(c.title,c.code) + c.modules.flatMap { listOf(it.title) + it.topics }).any { it.contains(query,true) }) }
                     if (courses.isEmpty()) Text("No matching syllabus topic. You can add a teacher topic below.", color = EvolveMuted, fontSize = 13.sp)
@@ -113,21 +117,22 @@ fun ExamEditorScreen(semester: AcceptedSemester, initialDate: String, busy: Bool
                                 (listOf(m.title) + m.topics).any { it.contains(query,true) } }.forEach { module ->
                                 val picked = selected[module.id].orEmpty()
                                 val all = picked.size == module.topics.size
-                                Row(Modifier.fillMaxWidth().toggleable(all, enabled = !busy, role = Role.Checkbox,
-                                    onValueChange = { checked -> setTopics(selected + (module.id to if (checked) module.topics.toSet() else emptySet())) }),
-                                    verticalAlignment = Alignment.CenterVertically) {
-                                    Checkbox(all, null, enabled = !busy)
-                                    Text("Module ${module.number} · All topics", color = EvolveText, fontSize = 14.sp, modifier = Modifier.weight(1f))
-                                }
                                 EvolveDisclosure(module.title, expandedModule == module.id || query.isNotBlank(),
-                                    { expandedModule = if (expandedModule == module.id) null else module.id }, "${picked.size} / ${module.topics.size} topics") {
+                                    { expandedModule = if (expandedModule == module.id) null else module.id },
+                                    "M${module.number} · ${picked.size} / ${module.topics.size} topics", leading = {
+                                        TriStateCheckbox(state = if (all) ToggleableState.On else if (picked.isNotEmpty()) ToggleableState.Indeterminate else ToggleableState.Off,
+                                        onClick = { setTopics(selected + (module.id to if (!all) module.topics.toSet() else emptySet()))
+                                        }, enabled = !busy, modifier = Modifier.padding(end = 6.dp).semantics {
+                                            contentDescription = "All topics in module ${module.number}"
+                                        })
+                                    }) {
                                     module.topics.filter { query.isBlank() || course.title.contains(query,true) || course.code.contains(query,true) ||
                                         module.title.contains(query,true) || it.contains(query,true) }.forEach { topic ->
                                         Row(Modifier.fillMaxWidth().toggleable(topic in picked, enabled = !busy, role = Role.Checkbox,
                                             onValueChange = { checked -> setTopics(selected + (module.id to if (checked) picked + topic else picked - topic)) })
                                             .heightIn(min = 48.dp).padding(end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                            Checkbox(topic in picked, null, enabled = !busy)
-                                            Text(topic, color = EvolveMuted, fontSize = 13.sp, lineHeight = 20.sp, modifier = Modifier.weight(1f))
+                                            Checkbox(topic in picked, null, enabled = !busy,modifier = Modifier.size(40.dp))
+                                            Text(topic, color = EvolveMuted, fontSize = 13.sp, lineHeight = 20.sp, modifier = Modifier.weight(1f).padding(start = 8.dp))
                                         }
                                     }
                                 }
@@ -157,7 +162,7 @@ fun ExamEditorScreen(semester: AcceptedSemester, initialDate: String, busy: Bool
                     }
                     Row(Modifier.fillMaxWidth().toggleable(confirmed, enabled = !busy, role = Role.Checkbox, onValueChange = { confirmed = it }),
                         verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(confirmed, null, enabled = !busy)
+                        Checkbox(confirmed, null, enabled = !busy,modifier = Modifier.size(48.dp))
                         Text("Teacher-confirmed portion", color = EvolveText, fontSize = 13.sp)
                     }
                     Text(if (confirmed) "Saved as confirmed by you." else "Saved as an estimate. You can change it anytime.", color = EvolveMuted, fontSize = 12.sp)

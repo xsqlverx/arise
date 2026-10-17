@@ -63,6 +63,7 @@ class ExamExperienceTest {
                 {},{},{},{},{},{},{})
         } } }
         compose.onNodeWithText(action.copy).assertDoesNotExist()
+        screenshot("today-initial")
         compose.onNodeWithText("Set your exam topics").performScrollTo().assertIsDisplayed()
         screenshot("today-exam-entry")
         compose.onNodeWithText("Set your exam topics").performClick()

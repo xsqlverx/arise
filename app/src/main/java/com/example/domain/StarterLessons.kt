@@ -13,11 +13,20 @@ data class StarterLesson(val title: String, val firstStep: String, val explanati
  * References support the concepts; these are not supplied teacher questions or past papers. */
 object StarterLessons {
     // Exact syllabus anchors: a lesson must not be recommended for a different selected topic.
-    private val scopeIndices = mapOf("a105mat01-m3" to 2, "a105mat01-m4" to 1,
-        "a105cyt02-m3" to 1, "a105cyt02-m4" to 1, "a105est03-m3" to 3,
-        "a105est03-m4" to 0, "a105est04-m1" to 3, "a105est04-m2" to 4,
-        "a105est04-m3" to 4, "a105est04-m4" to 0, "a105est05-m3" to 7, "a105est05-m4" to 2)
-    fun scopeTopic(module: CourseModule): String? = scopeIndices[module.id]?.let { module.topics.getOrNull(it) }
+    private val scopeTopics = mapOf(
+        "a105mat01-m3" to "Gradient",
+        "a105mat01-m4" to "Lagrange multipliers with one and two constraints",
+        "a105cyt02-m3" to "Beer-Lambert law including numerical problems",
+        "a105cyt02-m4" to "Ion-exchange softening",
+        "a105est03-m3" to "Development of solid surfaces",
+        "a105est03-m4" to "Isometric scale",
+        "a105est04-m1" to "Ohm and Kirchhoff laws with numericals",
+        "a105est04-m2" to "Average/RMS values and form factor",
+        "a105est04-m3" to "Half-wave, full-wave and bridge rectifiers",
+        "a105est04-m4" to "Communication-system block diagram",
+        "a105est05-m3" to "Recursion and the call stack",
+        "a105est05-m4" to "Dynamic programming with Fibonacci")
+    fun scopeTopic(module: CourseModule): String? = scopeTopics[module.id]?.takeIf { it in module.topics }
     private fun q(p: String, a: String, b: String, c: String, correct: Int, why: String) = StarterCheck(p, listOf(a,b,c), correct, why)
     private val lessons = mapOf(
         "a105mat01-m3" to StarterLesson("Find the direction\nof fastest increase.",

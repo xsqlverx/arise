@@ -26,7 +26,7 @@ for report in reports:
     for key in totals:
         totals[key] += int(suite.get(key, '0'))
 assert totals['failures'] == totals['errors'] == 0, totals
-assert totals['tests'] >= 58 and totals['skipped'] == 0, totals
+assert totals['tests'] >= 59 and totals['skipped'] == 0, totals
 digest = hashlib.sha256(apk.read_bytes()).hexdigest()
 summary = (f"Android debug APK assembled: {apk.stat().st_size:,} bytes.\n\n"
            f"{totals['tests']} unit tests; 0 failures/errors/skips. Includes the real Room upgrade test.\n\n"

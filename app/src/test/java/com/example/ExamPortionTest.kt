@@ -85,4 +85,8 @@ class ExamPortionTest {
     @Test fun everyStarterAnchorBelongsToItsActualSyllabus() {
         StarterLessons.moduleIds.forEach { id -> assertNotNull(StarterLessons.scopeTopic(pack.modules.first { it.id == id })) }
     }
+    @Test fun reorderingSyllabusTopicsCannotChangeWhichConceptTheStarterCovers() {
+        assertEquals("Gradient",StarterLessons.scopeTopic(module.copy(topics = module.topics.reversed())))
+        assertNull(StarterLessons.scopeTopic(module.copy(topics = module.topics.filterNot { it == "Gradient" })))
+    }
 }

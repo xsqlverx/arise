@@ -26,7 +26,7 @@ import com.example.ui.theme.*
 /** Details keep their space and reveal on request. No continuously running animation. */
 @Composable
 fun EvolveDisclosure(title: String, expanded: Boolean, onToggle: () -> Unit,
-    subtitle: String? = null, content: @Composable ColumnScope.() -> Unit) {
+    subtitle: String? = null, leading: (@Composable () -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
     val reduced = LocalReduceMotion.current
     val angle by animateFloatAsState(if (expanded) 180f else 0f,
         if (reduced) snap() else tween(180), label = "disclosure arrow")
@@ -34,6 +34,7 @@ fun EvolveDisclosure(title: String, expanded: Boolean, onToggle: () -> Unit,
         Row(Modifier.fillMaxWidth().semantics { stateDescription = if (expanded) "Expanded" else "Collapsed" }
             .clickable(role = Role.Button, onClick = onToggle).heightIn(min = 56.dp).padding(vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically) {
+            leading?.invoke()
             Column(Modifier.weight(1f)) {
                 Text(title, color = EvolveText, fontFamily = SpaceGroteskFontFamily, fontSize = 18.sp, lineHeight = 24.sp)
                 subtitle?.let { Spacer(Modifier.height(5.dp)); Text(it, color = EvolveMuted, fontSize = 12.sp) }
